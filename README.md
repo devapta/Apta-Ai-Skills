@@ -20,7 +20,7 @@ the **Claude Code plugin** gives you the native marketplace experience.
 ### Option A — Installer script (works for any agent)
 
 ```bash
-git clone https://github.com/VincentArjuna/Apta-Ai-Skills.git
+git clone https://github.com/devapta/Apta-Ai-Skills.git
 cd Apta-Ai-Skills
 ./install.sh
 ```
@@ -44,7 +44,7 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\install.ps1` (same flags, e
 From inside a Claude Code session:
 
 ```
-/plugin marketplace add VincentArjuna/Apta-Ai-Skills
+/plugin marketplace add devapta/Apta-Ai-Skills
 /plugin install apta-skills@apta-skills
 ```
 
@@ -55,7 +55,7 @@ commands run from your terminal.) Skills then appear as `apta-skills:<name>`
 ```jsonc
 {
   "extraKnownMarketplaces": {
-    "apta-skills": { "source": { "source": "github", "repo": "VincentArjuna/Apta-Ai-Skills" } }
+    "apta-skills": { "source": { "source": "github", "repo": "devapta/Apta-Ai-Skills" } }
   },
   "enabledPlugins": { "apta-skills@apta-skills": true }
 }

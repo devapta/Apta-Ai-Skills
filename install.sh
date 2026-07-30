@@ -182,7 +182,7 @@ main() {
   if [[ "$ACTION" == "install" ]]; then
     echo
     echo "Done. Tip: for a native Claude Code experience instead, run in a session:"
-    echo "  /plugin marketplace add <owner>/Apta-Ai-Skills  then  /plugin install apta-skills@apta-skills"
+    echo "  /plugin marketplace add devapta/Apta-Ai-Skills  then  /plugin install apta-skills@apta-skills"
   fi
 }
 main

@@ -1,7 +1,0 @@
-{
-  "name": "apta-skills",
-  "description": "Portable AI agent skills from the Apta collection. Each skill is a cross-tool Agent Skills folder (SKILL.md + optional references/scripts) that also loads natively in Claude Code.",
-  "author": {
-    "name": "Vincent"
-  }
-}

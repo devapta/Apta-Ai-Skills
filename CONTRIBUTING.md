@@ -1,17 +1,14 @@
 # Contributing skills
 
-A skill is a folder under `skills/<name>/` whose entrypoint is `SKILL.md`. It follows
-the open [Agent Skills](https://agentskills.io) standard, so author it to be **portable**
-first, Claude-enhanced second.
-
-## Directory layout
+A skill is a folder under `skills/<name>/` carrying the team standard in two
+renditions:
 
 ```
 skills/
 └── my-skill/
-    ├── SKILL.md          # required: frontmatter + instructions
-    ├── reference.md      # optional: detail Claude loads on demand
-    └── scripts/          # optional: bundled scripts
+    ├── SKILL.md            # required: the agent skill (frontmatter + instructions)
+    ├── references/         # optional: detail files SKILL.md points to
+    └── antigravity/        # optional: terse rule files for Antigravity
 ```
 
 ## SKILL.md format
@@ -19,39 +16,38 @@ skills/
 ```markdown
 ---
 name: my-skill
-description: One line — what this does and when to use it. (Only required-ish field.)
+description: One line — what this does and when to use it.
 ---
 
 # My Skill
 
-Instructions for the agent. Keep this file under ~500 lines; push detail into sibling
-files and link to them so they load only when needed.
+Instructions. Keep SKILL.md lean; push detail into `references/foo.md` files and
+reference them by relative path so agents load them only when needed.
 ```
 
-## Portability rules
+## The antigravity/ variant
 
-Author to the **portable base** (just `name` + `description` + markdown) so the skill
-loads in Cursor, Copilot, Codex, Gemini CLI, etc. Claude-specific frontmatter is allowed
-(`allowed-tools`, `when_to_use`, `argument-hint`, …) — other tools ignore unknown fields.
-To stay cross-tool, avoid *relying* on Claude-only features in the body:
+Antigravity has no skill folders — it reads flat rule files from `.agents/rules/`.
+So a skill that should reach Antigravity carries an `antigravity/` subdir with
+terse `.md` rule files distilled from the main skill. Three rules:
 
-| Portable ✅ | Claude-only (other tools ignore / can't run) |
-| --- | --- |
-| Plain markdown instructions | `!`cmd`` dynamic-context blocks |
-| Links to sibling `reference.md` | `${CLAUDE_SKILL_DIR}` substitution |
-| `name`, `description` | `context: fork`, `model`, `effort` |
+- **Update both renditions in tandem.** A change to `SKILL.md` / `references/`
+  must be mirrored (in terse form) in `antigravity/`, and vice versa — they are
+  one standard, not two.
+- **Rule filenames must be globally unique across all skills.** They are copied
+  flat into a single `.agents/rules/` directory, so two `antigravity/style.md`
+  files would silently collide. Prefix with the skill name (`my-skill-style.md`).
+- **Keep each rule file small.** CI enforces a cap (8192 bytes per file) because
+  Antigravity limits rule file size.
 
 ## Before you commit
 
 ```bash
-# If your Claude Code version has the plugin CLI (validates manifests + frontmatter):
-claude plugin validate .
-
-# Otherwise, sanity-check the JSON and each SKILL.md's frontmatter:
-python3 -m json.tool .claude-plugin/plugin.json >/dev/null
-python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
+scripts/validate-skills.sh   # the exact checks CI runs on every PR
+scripts/selftest.sh          # end-to-end installer test in a throwaway project
 ```
 
-Fix anything reported, then commit. Installed skills update automatically for anyone
-using the symlinked `install.sh` path; plugin users get the new version on the next
-`/plugin` update.
+CI (`.github/workflows/validate.yml`) asserts per skill: `SKILL.md` exists with
+non-empty `name` and `description` frontmatter, every relative `.md` reference in
+`SKILL.md` resolves to a file inside the skill, and every `antigravity/*.md` is
+under the size cap.

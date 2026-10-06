@@ -9,8 +9,20 @@
 set -euo pipefail
 shopt -s nullglob
 
+BOOTSTRAP_REPO="devapta/Apta-Ai-Skills"   # used only when run standalone
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="$REPO_ROOT/skills"
+
+if [[ ! -d "$SKILLS_SRC" ]]; then
+  # Standalone: no skills/ beside this script → clone the repo to a temp dir
+  # (shallow) and re-exec its install.sh. Requires gh (repo is private).
+  command -v gh >/dev/null || { echo "install.sh: standalone mode needs 'gh' (gh auth login) — or clone $BOOTSTRAP_REPO and run its install.sh" >&2; exit 1; }
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+  gh repo clone "$BOOTSTRAP_REPO" "$tmp" -- --depth 1 --quiet 2>/dev/null || gh repo clone "$BOOTSTRAP_REPO" "$tmp" -- --depth 1
+  exec bash "$tmp/install.sh" "$@"
+fi
 
 AGENTS=(claude-code codex opencode antigravity)
 

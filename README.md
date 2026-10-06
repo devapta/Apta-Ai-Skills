@@ -15,7 +15,14 @@ Run `./install.sh --list` for the live list and which agents each skill supports
 
 ## Quick start
 
-From inside the target project:
+From inside the target project (no clone needed — needs `gh` authenticated, repo is private):
+
+```bash
+gh api repos/devapta/Apta-Ai-Skills/contents/install.sh --jq .content \
+  | base64 -d > /tmp/apta-install.sh && bash /tmp/apta-install.sh
+```
+
+Or the explicit equivalent:
 
 ```bash
 git clone git@github.com:devapta/Apta-Ai-Skills.git /tmp/apta-skills   # or use your local clone

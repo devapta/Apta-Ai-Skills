@@ -29,18 +29,22 @@ AGENTS=(claude-code codex opencode antigravity)
 ACTION="install"      # install | uninstall | list
 FORCE=0
 TARGET=""
-SELECTED=()
+SELECTED=()   # agents
+SKILL_SEL=()  # skills picked via --skill (empty = all)
 
 usage() {
   cat <<'EOF'
-Usage: install.sh [--agent NAME]... [--target DIR] [--force] [--uninstall] [--list]
+Usage: install.sh [--agent NAME]... [--skill NAME]... [--target DIR] [--force] [--uninstall] [--list]
 
-Copies every skill in this repo into the target project's per-agent skill
-directories. Default target: the current directory (run inside the project).
+Copies the selected skills (default: all) into the target project's per-agent
+skill directories. Default target: the current directory (run inside the project).
 Copy is the only mode — commit the results to the target project.
 
-  (no --agent)   Interactive numbered agent picker.
+  (no --agent)   Interactive checkbox pickers: agents, then skills
+                 (↑/↓ move · space toggle · enter confirm).
   --agent NAME   Install for NAME, repeatable: claude-code codex opencode antigravity.
+  --skill NAME   Install (or uninstall) only skill NAME, repeatable — see --list.
+                 Default without --skill: every skill in this repo.
   --target DIR   Target project directory (default: current directory).
   --force        Overwrite (or, with --uninstall, delete) files that differ from this repo.
   --uninstall    Remove exactly the files this script would create; refuses
@@ -73,10 +77,66 @@ selected() { # selected NAME -> true if NAME was chosen
   return 1
 }
 
+# --- checkbox picker --------------------------------------------------------------
+# pick TITLE ITEM... → echoes each checked ITEM to stdout, one per line.
+# Pure bash + ANSI: ↑/↓ move, space toggles, enter submits (empty selection
+# re-asks). Renders to stderr so stdout stays machine-readable. Needs a TTY.
+pick() {
+  local title="$1"; shift
+  local items=("$@") state=() cur=0 printed=0 key ext any=0 i mark saved
+  local hint="↑/↓ move · space toggle · enter confirm"
+  for i in "${!items[@]}"; do state+=(0); done
+  # bash dies on SIGINT received while blocked in `read` without running any
+  # trap — so switch the tty out of signal mode for the picker and treat the
+  # raw Ctrl-C byte as a key. stty is coreutils; needs pick's stdin = the TTY.
+  saved="$(stty -g 2>/dev/null || true)"
+  if [[ -n "$saved" ]]; then stty -isig 2>/dev/null || true; fi
+  pick_restore() { # unhide cursor + undo stty -isig
+    printf '\e[?25h' >&2
+    if [[ -n "$saved" ]]; then stty "$saved" 2>/dev/null || true; fi
+  }
+  printf '\e[?25l' >&2                          # hide cursor
+  trap 'exit 130' INT                           # kill -INT outside read; EXIT trap restores
+  trap 'pick_restore' EXIT
+  while :; do
+    (( printed )) && printf '\e[%dA\r' "$printed" >&2 # rewind to the title line
+    printf '%s\n' "$title" >&2; printed=1
+    for i in "${!items[@]}"; do
+      mark='[ ]'; (( state[i] )) && mark='[x]'
+      (( i == cur )) && printf '\e[7m' >&2      # inverse video on current row
+      printf '%s %s\e[27m\e[K\n' "$mark" "${items[i]}" >&2
+      printed=$((printed + 1))
+    done
+    printf '%s\e[K\n' "$hint" >&2; printed=$((printed + 1))
+    IFS= read -rsn1 key || die "selection aborted"
+    case "$key" in
+      $'\x03') exit 130 ;;                      # Ctrl-C byte (isig is off); EXIT trap restores
+      $'\e') # escape sequence: arrows are ESC [ A / ESC [ B
+        ext=""
+        IFS= read -rsn2 -t 0.05 ext || true
+        case "$ext" in
+          '[A') (( cur > 0 )) && cur=$((cur - 1)) ;;
+          '[B') (( cur < ${#items[@]} - 1 )) && cur=$((cur + 1)) ;;
+        esac ;;
+      ' ') state[cur]=$(( 1 - state[cur] )) ;;
+      '') # enter — never proceed on an empty selection
+        any=0
+        for i in "${!items[@]}"; do (( state[i] )) && any=1; done
+        (( any )) && break
+        hint="select at least one · ↑/↓ move · space toggle · enter confirm" ;;
+    esac
+  done
+  for i in "${!items[@]}"; do (( state[i] )) && printf '%s\n' "${items[i]}"; done
+  pick_restore
+  trap - INT EXIT
+  return 0
+}
+
 # --- options -------------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)     [[ -n "${2:-}" ]] || die "--agent needs a value"; add_agent "$2"; shift 2 ;;
+    --skill)     [[ -n "${2:-}" ]] || die "--skill needs a value"; SKILL_SEL+=("$2"); shift 2 ;;
     --target)    [[ -n "${2:-}" ]] || die "--target needs a value"; TARGET="$2"; shift 2 ;;
     --force)     FORCE=1; shift ;;
     --uninstall) ACTION="uninstall"; shift ;;
@@ -95,6 +155,20 @@ for d in "$SKILLS_SRC"/*/; do
 done
 [[ ${#SKILLS[@]} -gt 0 ]] || die "no skills found in $SKILLS_SRC (each needs a SKILL.md)"
 
+# --- --skill filter (default: all skills) -----------------------------------------
+if [[ ${#SKILL_SEL[@]} -gt 0 ]]; then
+  for t in "${SKILL_SEL[@]}"; do
+    found=0
+    for s in "${SKILLS[@]}"; do [[ "$s" == "$t" ]] && found=1; done
+    [[ $found -eq 1 ]] || die "unknown skill '$t' — available skills: ${SKILLS[*]}"
+  done
+  chosen=()
+  for s in "${SKILLS[@]}"; do
+    for t in "${SKILL_SEL[@]}"; do [[ "$s" == "$t" ]] && { chosen+=("$s"); break; }; done
+  done
+  SKILLS=("${chosen[@]}")
+fi
+
 if [[ "$ACTION" == "list" ]]; then
   echo "Skills in $SKILLS_SRC:"
   for skill in "${SKILLS[@]}"; do
@@ -110,19 +184,16 @@ TARGET="${TARGET:-$PWD}"
 [[ -d "$TARGET" ]] || die "target directory not found: $TARGET"
 TARGET="$(cd "$TARGET" && pwd)"
 
-# --- agent selection -----------------------------------------------------------
+# --- agent + skill selection -----------------------------------------------------
+# Prompts only when fully interactive: no --agent flag, no --skill flag, TTY stdin.
+# (Any --agent/--skill flag, or non-TTY stdin, makes the run non-interactive.)
 if [[ ${#SELECTED[@]} -eq 0 ]]; then
-  [[ -t 0 ]] || die "no --agent given and stdin is not a terminal (valid: ${AGENTS[*]})"
-  echo "Install skills for which agents? (one or more numbers, e.g. 1 3 or 1,3)"
-  i=1
-  for a in "${AGENTS[@]}"; do echo "  $i) $a"; i=$((i + 1)); done
-  read -r -p "> " answer || die "no selection given"
-  read -ra picks <<<"${answer//,/ }"
-  [[ ${#picks[@]} -gt 0 ]] || die "no agents selected"
-  for p in "${picks[@]}"; do
-    [[ "$p" =~ ^[1-${#AGENTS[@]}]$ ]] || die "invalid selection: '$p'"
-    SELECTED+=("${AGENTS[p - 1]}")
-  done
+  if [[ -t 0 && ${#SKILL_SEL[@]} -eq 0 ]]; then
+    mapfile -t SELECTED < <(pick "Install skills for which agents?" "${AGENTS[@]}")
+    mapfile -t SKILLS < <(pick "Install which skills?" "${SKILLS[@]}")
+  else
+    die "--agent is required when --skill is used or stdin is not a terminal (valid: ${AGENTS[*]})"
+  fi
 fi
 
 # --- per-file install/uninstall ------------------------------------------------

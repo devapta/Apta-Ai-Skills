@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# scripts/selftest.sh — end-to-end test of install.sh in a throwaway project:
-# install for all four agents non-interactively, assert every expected file,
-# run the same skill checks CI runs, then uninstall and assert a clean tree.
+# scripts/selftest.sh — end-to-end test of install.sh in a throwaway project.
+# Runs against a temp copy of the repo plus a fake extra skill (so --skill is
+# testable): install for all four agents non-interactively, assert every
+# expected file, exercise --skill subsets, run the same skill checks CI runs,
+# then uninstall and assert a clean tree. The repo tree itself stays untouched.
 
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-INSTALL="$REPO/install.sh"
 ALL=(--agent claude-code --agent codex --agent opencode --agent antigravity)
 
 fail()    { echo "SELFTEST FAIL: $*" >&2; exit 1; }
@@ -19,19 +20,49 @@ proj="$tmp/project"
 mkdir -p "$proj"
 trap 'rm -rf "$tmp"' EXIT
 
+# Temp copy of the repo + a second, fake skill so per-skill selection is testable.
+copy="$tmp/repo"
+mkdir -p "$copy/skills/fake-skill"
+cp "$REPO/install.sh" "$copy/"
+cp -r "$REPO/skills/." "$copy/skills/"
+cat >"$copy/skills/fake-skill/SKILL.md" <<'EOF'
+---
+name: fake-skill
+description: Selftest fixture — never a real skill.
+---
+
+# Fake Skill
+EOF
+INSTALL="$copy/install.sh"
+SKILLS_DIR="$copy/skills"
+
 echo "== skill-format checks (same as CI) =="
 bash "$REPO/scripts/validate-skills.sh"
 
 echo "== unknown agent is rejected =="
 if "$INSTALL" --target "$proj" --agent bogus >/dev/null 2>&1; then fail "bogus agent accepted"; fi
 
+echo "== unknown skill is rejected =="
+if "$INSTALL" --target "$proj" --skill bogus --agent claude-code >/dev/null 2>&1; then fail "bogus skill accepted"; fi
+
+echo "== non-TTY run without --agent is rejected =="
+if "$INSTALL" --target "$proj" </dev/null >/dev/null 2>&1; then fail "non-TTY run without --agent accepted"; fi
+
 echo "== --list works =="
 "$INSTALL" --list | grep -q "apta-superskill" || fail "--list did not show skills"
+
+echo "== --skill installs only the named skill =="
+"$INSTALL" --target "$proj" --skill fake-skill "${ALL[@]}" >/dev/null 2>&1
+missing "$proj/.claude/skills/apta-superskill"
+missing "$proj/.agents/skills/apta-superskill"
+missing "$proj/.agents/rules"                  # apta-superskill's rules never land
+exists  "$proj/.claude/skills/fake-skill/SKILL.md"
+exists  "$proj/.agents/skills/fake-skill/SKILL.md"
 
 echo "== install all four agents =="
 "$INSTALL" --target "$proj" "${ALL[@]}" >/dev/null
 
-for d in "$REPO"/skills/*/; do
+for d in "$SKILLS_DIR"/*/; do
   s="$(basename "$d")"
   [[ -f "$d/SKILL.md" ]] || continue
   exists "$proj/.claude/skills/$s/SKILL.md"
@@ -51,7 +82,14 @@ done
 echo "== idempotent re-run =="
 "$INSTALL" --target "$proj" "${ALL[@]}" >/dev/null
 
-first_skill="$(basename "$(ls -d "$REPO"/skills/*/ | head -1)")"
+echo "== uninstall --skill removes only the named skill =="
+"$INSTALL" --target "$proj" --skill fake-skill --uninstall "${ALL[@]}" >/dev/null
+missing "$proj/.claude/skills/fake-skill"
+missing "$proj/.agents/skills/fake-skill"
+exists  "$proj/.claude/skills/apta-superskill/SKILL.md"
+exists  "$proj/.agents/skills/apta-superskill/SKILL.md"
+
+first_skill="$(basename "$(ls -d "$SKILLS_DIR"/*/ | head -1)")"
 victim="$proj/.claude/skills/$first_skill/SKILL.md"
 
 echo "== differing file blocks install unless --force =="

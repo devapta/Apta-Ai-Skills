@@ -1,7 +1,8 @@
 # Contributing skills
 
 A skill is a folder under `skills/<name>/` carrying the team standard in two
-renditions:
+renditions. The folder name is the selection name — it is what the interactive
+skill picker shows and what users pass to `install.sh --skill <name>`:
 
 ```
 skills/

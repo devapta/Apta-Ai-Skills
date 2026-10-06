@@ -29,21 +29,29 @@ git clone git@github.com:devapta/Apta-Ai-Skills.git /tmp/apta-skills   # or use 
 /tmp/apta-skills/install.sh
 ```
 
-You get a numbered prompt:
+You get two checkbox pickers — first agents, then skills:
 
 ```
-Install skills for which agents? (one or more numbers, e.g. 1 3 or 1,3)
-  1) claude-code
-  2) codex
-  3) opencode
-  4) antigravity
->
+Install skills for which agents?
+[x] claude-code
+[ ] codex
+[ ] opencode
+[ ] antigravity
+↑/↓ move · space toggle · enter confirm
 ```
 
-Non-interactive (scripts, CI):
+Arrow keys move, space toggles, enter confirms; an empty selection just
+re-asks. Non-interactive runs (scripts, CI, or any `--agent`/`--skill` flag)
+never prompt. Without `--skill` a run installs every skill in the repo:
 
 ```bash
 /tmp/apta-skills/install.sh --agent claude-code --agent codex
+```
+
+With one or more `--skill NAME` flags, only those skills:
+
+```bash
+/tmp/apta-skills/install.sh --agent claude-code --skill apta-superskill
 ```
 
 Then **commit the created directories** to the target project.
@@ -53,6 +61,7 @@ Then **commit the created directories** to the target project.
 | Flag | Effect |
 | --- | --- |
 | `--agent NAME` | Install for `claude-code`, `codex`, `opencode`, or `antigravity` (repeatable). |
+| `--skill NAME` | Install — or with `--uninstall`, remove — only skill `NAME` (repeatable). Default: all skills. |
 | `--target DIR` | Target project directory (default: current directory). |
 | `--force` | Overwrite — or with `--uninstall`, delete — files that differ from this repo. |
 | `--uninstall` | Remove exactly the files this script would create; refuses locally-modified files unless `--force`. |

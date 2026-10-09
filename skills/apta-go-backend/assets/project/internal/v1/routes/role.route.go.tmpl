@@ -1,0 +1,18 @@
+package routes
+
+import (
+	"__MODULE__/internal/enums"
+	"__MODULE__/internal/v1/handlers"
+	"__MODULE__/internal/v1/middlewares"
+	"github.com/gin-gonic/gin"
+)
+
+func setupRoleRoutes(v1 *gin.RouterGroup, authM *middlewares.AuthMiddleware, h *handlers.RoleHandler) {
+	roles := v1.Group("/roles", authM.Authn)
+
+	roles.POST("/", authM.Authz(enums.PermRolesCreate), h.Create)
+	roles.GET("/", authM.Authz(enums.PermRolesRead), h.Read)
+	roles.GET("/:id", authM.Authz(enums.PermRolesRead), h.GetByID)
+	roles.PUT("/:id", authM.Authz(enums.PermRolesUpdate), h.Update)
+	roles.DELETE("/:id", authM.Authz(enums.PermRolesDelete), h.Delete)
+}

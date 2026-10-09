@@ -1,0 +1,286 @@
+{
+  "metadata": {
+    "skill_name": "apta-go-backend",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-09T09:57:31Z",
+    "evals_run": [
+      0,
+      1
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 11.5,
+        "tokens": 38724,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Project builds and vets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "No leftover 'fleet' references",
+          "passed": true,
+          "evidence": "none found"
+        },
+        {
+          "text": "go.mod module is github.com/devapta/inventory-api",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Retains versioned layered layout for users/roles/user-roles",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Env defaults retained (PORT=7008)",
+          "passed": true,
+          "evidence": "['PORT=7008']"
+        },
+        {
+          "text": "S3/Infisical/NATS present in code but commented out",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Default stack present (cobra, dig, otel, swagger, slog, jwt)",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Go version in go.mod matches Dockerfile base (1.26.x)",
+          "passed": true,
+          "evidence": "['go 1.26.4']"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.7142857142857143,
+        "passed": 5,
+        "failed": 2,
+        "total": 7,
+        "time_seconds": 17.9,
+        "tokens": 41822,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Project builds and vets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "All six layer files created",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Registered in di.go, router.go, postgres.go (migrate+drop)",
+          "passed": false,
+          "evidence": ""
+        },
+        {
+          "text": "Four warehouses#<action> permissions added",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Name unique + not null; ownerId and commissionedAt fields present",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Name required in request model (binding)",
+          "passed": false,
+          "evidence": ""
+        },
+        {
+          "text": "Swagger annotations on handler",
+          "passed": true,
+          "evidence": ""
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 4,
+        "failed": 4,
+        "total": 8,
+        "time_seconds": 113.1,
+        "tokens": 89205,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Project builds and vets",
+          "passed": false,
+          "evidence": "# github.com/devapta/inventory-api/docs\ndocs/docs.go:1515:2: unknown field LeftDelim in struct literal of type swag.Spec\ndocs/docs.go:1516:2: unknown field RightDelim in struct literal of type swag.Sp"
+        },
+        {
+          "text": "No leftover 'fleet' references",
+          "passed": true,
+          "evidence": "none found"
+        },
+        {
+          "text": "go.mod module is github.com/devapta/inventory-api",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Retains versioned layered layout for users/roles/user-roles",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Env defaults retained (PORT=7008)",
+          "passed": false,
+          "evidence": "['PORT=7009']"
+        },
+        {
+          "text": "S3/Infisical/NATS present in code but commented out",
+          "passed": false,
+          "evidence": ""
+        },
+        {
+          "text": "Default stack present (cobra, dig, otel, swagger, slog, jwt)",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Go version in go.mod matches Dockerfile base (1.26.x)",
+          "passed": false,
+          "evidence": "['go 1.27.1']"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 30.0,
+        "tokens": 50167,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Project builds and vets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "All six layer files created",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Registered in di.go, router.go, postgres.go (migrate+drop)",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Four warehouses#<action> permissions added",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Name unique + not null; ownerId and commissionedAt fields present",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Name required in request model (binding)",
+          "passed": true,
+          "evidence": ""
+        },
+        {
+          "text": "Swagger annotations on handler",
+          "passed": true,
+          "evidence": ""
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.8571,
+        "stddev": 0.202,
+        "min": 0.7143,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 14.7,
+        "stddev": 4.5255,
+        "min": 11.5,
+        "max": 17.9
+      },
+      "tokens": {
+        "mean": 40273.0,
+        "stddev": 2190.6168,
+        "min": 38724,
+        "max": 41822
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.75,
+        "stddev": 0.3536,
+        "min": 0.5,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 71.55,
+        "stddev": 58.7606,
+        "min": 30.0,
+        "max": 113.1
+      },
+      "tokens": {
+        "mean": 69686.0,
+        "stddev": 27604.0345,
+        "min": 50167,
+        "max": 89205
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.11",
+      "time_seconds": "-56.8",
+      "tokens": "-29413"
+    }
+  },
+  "notes": []
+}

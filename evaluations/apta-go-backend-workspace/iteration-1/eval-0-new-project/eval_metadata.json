@@ -1,0 +1,1 @@
+{"eval_id":0,"eval_name":"new-project","prompt":"I need a new Go + Gin backend for our inventory service. Module path github.com/devapta/inventory-api. Set it up following our standard (users, roles, JWT, swagger, otel etc).","assertions":[]}

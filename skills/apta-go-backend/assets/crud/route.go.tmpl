@@ -1,0 +1,18 @@
+package routes
+
+import (
+	"__MODULE__/internal/enums"
+	"__MODULE__/internal/v1/handlers"
+	"__MODULE__/internal/v1/middlewares"
+	"github.com/gin-gonic/gin"
+)
+
+func setup__Entity__Routes(v1 *gin.RouterGroup, authM *middlewares.AuthMiddleware, h *handlers.__Entity__Handler) {
+	__entities__ := v1.Group("/__entities-kebab__", authM.Authn)
+
+	__entities__.POST("/", authM.Authz(enums.Perm__Entities__Create), h.Create)
+	__entities__.GET("/", authM.Authz(enums.Perm__Entities__Read), h.Read)
+	__entities__.GET("/:id", authM.Authz(enums.Perm__Entities__Read), h.GetByID)
+	__entities__.PUT("/:id", authM.Authz(enums.Perm__Entities__Update), h.Update)
+	__entities__.DELETE("/:id", authM.Authz(enums.Perm__Entities__Delete), h.Delete)
+}

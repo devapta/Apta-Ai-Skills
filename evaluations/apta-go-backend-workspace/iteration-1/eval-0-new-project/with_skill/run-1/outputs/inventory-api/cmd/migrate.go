@@ -1,0 +1,27 @@
+package cmd
+
+import (
+	"github.com/devapta/inventory-api/internal/configs"
+	"github.com/spf13/cobra"
+)
+
+var isDrop bool
+
+// migrateCmd represents the migrate command
+var migrateCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: "Migrate the database and seed the default user",
+	Run: func(cmd *cobra.Command, args []string) {
+		configs.SetupENV()
+		configs.ConnectDB(nil)
+		if isDrop {
+			configs.DropDB()
+		}
+		configs.MigrateDB()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(migrateCmd)
+	migrateCmd.PersistentFlags().BoolVar(&isDrop, "drop", false, "Whether to drop the db first")
+}

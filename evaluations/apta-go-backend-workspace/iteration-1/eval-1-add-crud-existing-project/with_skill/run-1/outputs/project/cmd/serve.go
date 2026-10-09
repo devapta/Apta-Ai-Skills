@@ -1,0 +1,46 @@
+package cmd
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/devapta/shop-api/internal/app"
+	"github.com/devapta/shop-api/internal/configs"
+	"github.com/devapta/shop-api/internal/container"
+	"github.com/spf13/cobra"
+)
+
+// serveCmd represents the serve command
+var serveCmd = &cobra.Command{
+	Use:   "serve",
+	Short: "Run the HTTP API server",
+	Run: func(cmd *cobra.Command, args []string) {
+		configs.SetupENV()
+
+		ctx := context.Background()
+		shutdown, err := configs.SetupOtel(ctx)
+		if err != nil {
+			log.Fatalf("failed to set up otel: %v", err)
+		}
+
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := shutdown(shutdownCtx); err != nil {
+				log.Printf("otel shutdown error: %v", err)
+			}
+		}()
+
+		c := container.New()
+		c.Invoke(func(app *app.App) {
+			if err := app.Run(); err != nil {
+				log.Println(err)
+			}
+		})
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(serveCmd)
+}

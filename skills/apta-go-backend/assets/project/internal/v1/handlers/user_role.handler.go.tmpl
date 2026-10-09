@@ -1,0 +1,150 @@
+package handlers
+
+import (
+	"net/http"
+
+	"__MODULE__/internal/common"
+	"__MODULE__/internal/entities"
+	"__MODULE__/internal/v1/models"
+	"__MODULE__/internal/v1/services"
+	"github.com/gin-gonic/gin"
+	_ "github.com/morkid/paginate"
+)
+
+type UserRoleHandler struct {
+	service services.IUserRoleService
+}
+
+var _ = entities.UserRole{}
+
+func NewUserRoleHandler(service services.IUserRoleService) *UserRoleHandler {
+	return &UserRoleHandler{
+		service: service,
+	}
+}
+
+// Create godoc
+// @Summary			Create user role
+// @Description		Create a new user role
+// @Tags 			user-roles
+// @Accept 			json
+// @Produce 		json
+// @Param 			userRole	body	models.UserRoleInput		true	"User role payload"
+// @Success			201	{object}	common.Result[uint]
+// @Failure			400	{object}	common.Result[string]
+// @Failure     	412	{object}  	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security 		ApiKeyAuth
+// @Router 			/v1/user-roles [post]
+func (h *UserRoleHandler) Create(c *gin.Context) {
+	var ur models.UserRoleInput
+	if err := c.ShouldBindJSON(&ur); err != nil {
+		_, res := common.ResultErr(err, "failed parsing json")
+		c.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	id, err := h.service.Create(c.Request.Context(), ur)
+	if err != nil {
+		c.JSON(common.ResultErr(err, "failed creating user role"))
+		return
+	}
+
+	c.JSON(http.StatusCreated, common.ResultOk(id, "User role created"))
+}
+
+// Read godoc
+// @Summary			List user roles
+// @Description  	Get a paginated list of user roles
+// @Tags         	user-roles
+// @Accept       	json
+// @Produce      	json
+// @Param        	page     query     int     false  "Page"
+// @Param        	size     query     int     false  "Size"
+// @Param        	sort     query     string  false  "Sort"
+// @Param        	filters  query     string  false  "Filter"
+// @Success      	200	{object}	paginate.Page{items=[]models.UserRolePage}
+// @Failure      	401 {object}	common.Result[string]
+// @Failure      	500 {object}	common.Result[string]
+// @Security     	ApiKeyAuth
+// @Router 			/v1/user-roles [get]
+func (h *UserRoleHandler) Read(c *gin.Context) {
+	urs, _ := h.service.Read(c)
+
+	c.JSON(http.StatusOK, urs)
+}
+
+// Update godoc
+// @Summary			Update user role
+// @Description		Update an existing user role's details
+// @Tags			user-roles
+// @Accept			json
+// @Produce			json
+// @Param			id	path	int		true	"User Role ID"
+// @Param			userRole	body	models.UserRoleInput		true	"Updated user role details"
+// @Success			200	{object}	common.Result[any]
+// @Failure			400	{object}	common.Result[string]
+// @Failure     	401 {object}  	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security		ApiKeyAuth
+// @Router 			/v1/user-roles/{id} [put]
+func (h *UserRoleHandler) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var ur models.UserRoleInput
+	if err := c.ShouldBindJSON(&ur); err != nil {
+		_, res := common.ResultErr(err, "failed parsing json")
+		c.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	if err := h.service.Update(c.Request.Context(), id, ur); err != nil {
+		c.JSON(common.ResultErr(err, "failed updating user role"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk[any](nil, "User role updated"))
+}
+
+// Delete godoc
+// @Summary			Delete user role
+// @Description		Delete a user role by ID
+// @Tags			user-roles
+// @Produce			json
+// @Param			id	path	int		true	"User Role ID"
+// @Success			200	{object}	common.Result[any]
+// @Failure      	401 {object}	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security		ApiKeyAuth
+// @Router 			/v1/user-roles/{id} [delete]
+func (h *UserRoleHandler) Delete(c *gin.Context) {
+	if err := h.service.Delete(c.Request.Context(), c.Param("id")); err != nil {
+		c.JSON(common.ResultErr(err, "failed deleting user role"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk[any](nil, "User role deleted"))
+}
+
+// GetByID godoc
+// @Summary			Get user role by ID
+// @Description		Get detailed information about a user role by ID
+// @Tags			user-roles
+// @Accept       	json
+// @Produce      	json
+// @Param        	id       path      string  true   "User Role ID"
+// @Param        	scope    query     string  false  "Scope"
+// @Success    		200	{object}	common.Result[entities.UserRole]
+// @Failure    		401 {object}  	common.Result[string]
+// @Failure  	    500 {object}  	common.Result[string]
+// @Security 	    ApiKeyAuth
+// @Router 			/v1/user-roles/{id} [get]
+func (h *UserRoleHandler) GetByID(c *gin.Context) {
+	ur, err := h.service.GetByID(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(common.ResultErr(err, "failed getting user role"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk(ur, "User role found"))
+}

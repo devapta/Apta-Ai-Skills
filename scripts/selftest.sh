@@ -106,4 +106,17 @@ exists "$victim"
 echo "== tree is clean after uninstall =="
 for d in .claude .agents .opencode; do missing "$proj/$d"; done
 
+echo "== --global installs into \$HOME (fake HOME), never antigravity =="
+fakehome="$tmp/home"; mkdir -p "$fakehome"
+if HOME="$fakehome" "$INSTALL" --global --agent antigravity >/dev/null 2>&1; then fail "--global accepted antigravity"; fi
+if HOME="$fakehome" "$INSTALL" --global --target "$proj" --agent claude-code >/dev/null 2>&1; then fail "--global + --target accepted"; fi
+HOME="$fakehome" "$INSTALL" --global --agent claude-code --agent codex --skill fake-skill >/dev/null || fail "global install failed"
+exists "$fakehome/.claude/skills/fake-skill/SKILL.md"
+exists "$fakehome/.agents/skills/fake-skill/SKILL.md"
+HOME="$fakehome" "$INSTALL" --global --agent opencode --skill fake-skill >/dev/null || fail "global opencode install failed"
+exists "$fakehome/.config/opencode/skills/fake-skill/SKILL.md"
+HOME="$fakehome" "$INSTALL" --global --agent claude-code --agent codex --skill fake-skill --uninstall >/dev/null || fail "global uninstall failed"
+HOME="$fakehome" "$INSTALL" --global --agent opencode --skill fake-skill --uninstall >/dev/null || fail "global opencode uninstall failed"
+missing "$fakehome/.claude"; missing "$fakehome/.agents"; missing "$fakehome/.config"
+
 echo "SELFTEST PASSED"

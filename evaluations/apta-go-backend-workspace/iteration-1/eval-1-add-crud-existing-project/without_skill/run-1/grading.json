@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Project builds and vets",
+      "passed": true,
+      "evidence": "ok"
+    },
+    {
+      "text": "All six layer files created",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Registered in di.go, router.go, postgres.go (migrate+drop)",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Four warehouses#<action> permissions added",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Name unique + not null; ownerId and commissionedAt fields present",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Name required in request model (binding)",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Swagger annotations on handler",
+      "passed": true,
+      "evidence": ""
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  }
+}

@@ -1,0 +1,85 @@
+package repositories
+
+import (
+	"context"
+	"fmt"
+
+	"__MODULE__/internal/common"
+	"__MODULE__/internal/entities"
+	"__MODULE__/internal/v1/models"
+	"github.com/devfeel/mapper"
+	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
+	"gorm.io/gorm"
+)
+
+type IRoleRepo interface {
+	common.IBaseCrudRepo[entities.Role, models.RoleInput, models.RolePage]
+}
+
+type RoleRepo struct {
+	db        *gorm.DB
+	pageQuery string
+}
+
+var _ IRoleRepo = &RoleRepo{}
+
+func NewRoleRepo(db *gorm.DB) *RoleRepo {
+	return &RoleRepo{
+		db: db,
+		pageQuery: `
+			SELECT 
+				*
+			FROM roles r
+			where r.deleted_at isnull
+		`,
+	}
+}
+
+func (r *RoleRepo) Create(c context.Context, input models.RoleInput) (uint, error) {
+	var role entities.Role
+	if err := mapper.AutoMapper(&input, &role); err != nil {
+		return 0, fmt.Errorf("cannot map input: %w", err)
+	}
+
+	err := gorm.G[entities.Role](r.db).Create(c, &role)
+
+	return role.ID, err
+}
+
+func (r *RoleRepo) Read(c *gin.Context) (paginate.Page, []models.RolePage) {
+	roles := make([]models.RolePage, 0)
+
+	stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+
+	pg := paginate.New()
+
+	page := pg.With(stmt).Request(c.Request).Response(&roles)
+
+	return page, roles
+}
+
+func (r *RoleRepo) Update(c context.Context, id any, input models.RoleInput) error {
+	var role entities.Role
+	if err := mapper.AutoMapper(&input, &role); err != nil {
+		return fmt.Errorf("cannot map input: %w", err)
+	}
+
+	_, err := gorm.G[entities.Role](r.db).Where("id = ?", id).Updates(c, role)
+
+	return err
+}
+
+func (r *RoleRepo) Delete(c context.Context, id any) error {
+	_, err := gorm.G[entities.Role](r.db).Where("id = ?", id).Delete(c)
+
+	return err
+}
+
+func (r *RoleRepo) GetByID(c context.Context, id any) (entities.Role, error) {
+	var role entities.Role
+
+	role, err := gorm.G[entities.Role](r.db).Where("id = ?", id).First(c)
+
+	return role, err
+}

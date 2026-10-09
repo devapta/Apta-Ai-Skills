@@ -1,0 +1,197 @@
+package services
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/alexedwards/argon2id"
+	"github.com/devapta/shop-api/internal/common"
+	"github.com/devapta/shop-api/internal/configs"
+	"github.com/devapta/shop-api/internal/entities"
+	"github.com/devapta/shop-api/internal/v1/models"
+	"github.com/devapta/shop-api/internal/v1/repositories"
+	"github.com/devapta/shop-api/pkg/arrays"
+	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
+)
+
+type IUserService interface {
+	common.IBaseCrudService[entities.User, models.UserInput, models.UserPage]
+	Login(c *gin.Context, input models.LoginInput) (models.LoginResponse, error)
+	RegenerateTokenPair(c *gin.Context, userID any, isRemember bool) (models.LoginResponse, error)
+	AssignRoles(c context.Context, userID uint, newRoleIDs []uint) error
+	GetPermissions(c context.Context, userID any) ([]string, error)
+	GetRoles(c context.Context, id any) ([]models.UserRole, error)
+}
+
+type UserService struct {
+	repo repositories.IUserRepo
+	// urRepo repositories.IUserRoleRepo
+}
+
+var _ IUserService = &UserService{}
+
+func NewUserService(
+	repo repositories.IUserRepo,
+	// urRepo repositories.IUserRoleRepo,
+) *UserService {
+	return &UserService{
+		repo: repo,
+		// urRepo: urRepo,
+	}
+}
+
+func (s *UserService) Create(c context.Context, input models.UserInput) (uint, error) {
+	password, err := argon2id.CreateHash(input.Password, argon2id.DefaultParams)
+	if err != nil {
+		return 0, fmt.Errorf("failed to hash password: %w", err)
+	}
+	input.Password = password
+
+	return s.repo.Create(c, input)
+}
+
+func (s *UserService) Read(c *gin.Context) (paginate.Page, []models.UserPage) {
+	return s.repo.Read(c)
+}
+
+func (s *UserService) Update(c context.Context, id any, input models.UserInput) error {
+	if input.Password != "" {
+		password, err := argon2id.CreateHash(input.Password, argon2id.DefaultParams)
+		if err != nil {
+			return fmt.Errorf("failed to hash password: %w", err)
+		}
+		input.Password = password
+	}
+
+	return s.repo.Update(c, id, input)
+}
+
+func (s *UserService) Delete(c context.Context, id any) error {
+	return s.repo.Delete(c, id)
+}
+
+func (s *UserService) GetByID(c context.Context, id any) (entities.User, error) {
+	return s.repo.GetByID(c, id)
+}
+
+func (s *UserService) Login(c *gin.Context, input models.LoginInput) (models.LoginResponse, error) {
+	var res models.LoginResponse
+	user, err := s.repo.GetByUsernameOrEmail(c.Request.Context(), input.Username)
+	if err != nil {
+		return res, err
+	}
+
+	if ok, _ := argon2id.ComparePasswordAndHash(input.Password, user.Password); !ok {
+		return res, errors.New("unauthorized")
+	}
+
+	res, err = s.GenerateTokenPair(c.Request.Context(), user, input.IsRemember, c.Request.Host)
+	if err != nil {
+		return res, fmt.Errorf("failed to generate token pair: %w", err)
+	}
+	common.GenerateCookies(c, res.AccessToken, res.RefreshToken, input.IsRemember)
+
+	return res, nil
+}
+
+func (s *UserService) RegenerateTokenPair(c *gin.Context, userID any, isRemember bool) (models.LoginResponse, error) {
+	var res models.LoginResponse
+	user, err := s.repo.GetByID(c.Request.Context(), userID)
+	if err != nil {
+		return res, err
+	}
+
+	res, err = s.GenerateTokenPair(c.Request.Context(), user, isRemember, c.Request.Host)
+	if err != nil {
+		return res, fmt.Errorf("failed to generate token pair: %w", err)
+	}
+	common.GenerateCookies(c, res.AccessToken, res.RefreshToken, isRemember)
+
+	return res, nil
+}
+
+// func (s *UserService) AssignRoles(c context.Context, userID uint, newRoleIDs []uint) error {
+// 	tx := s.db.Begin()
+// 	defer tx.Rollback()
+
+// 	usecase := usecases.InitAssignRolesUsecase(tx)
+// 	usecase.UserID = userID
+// 	usecase.NewRoleIDs = newRoleIDs
+
+// 	if err := usecase.Execute(c); err != nil {
+// 		return err
+// 	}
+
+// 	return tx.Commit().Error
+// }
+
+func (s *UserService) GetPermissions(c context.Context, userID any) ([]string, error) {
+	return s.repo.GetPermissions(c, userID)
+}
+
+func (s *UserService) GenerateTokenPair(c context.Context, user entities.User, isRemember bool, iss string) (models.LoginResponse, error) {
+	var res models.LoginResponse
+	claims := map[string]any{
+		"sub":    user.Username,
+		"userId": user.ID,
+		"iss":    iss,
+		"aud":    iss,
+	}
+
+	permissions, err := s.repo.GetPermissions(c, user.ID)
+	if err != nil {
+		return res, fmt.Errorf("failed retrieving permissions: %w", err)
+	}
+
+	at, rt, err := common.GenerateJWTPair(claims, permissions, isRemember)
+	if err != nil {
+		return res, fmt.Errorf("failed generating token pair: %w", err)
+	}
+
+	res.AccessToken = at
+	res.RefreshToken = rt
+	res.User = user
+
+	return res, nil
+}
+
+func (s *UserService) GetRoles(c context.Context, id any) ([]models.UserRole, error) {
+	return s.repo.GetRoles(c, id)
+}
+
+func (s *UserService) AssignRoles(c context.Context, userID uint, newRoleIDs []uint) error {
+	tx := configs.DB.Begin()
+	defer tx.Rollback()
+
+	urRepo := repositories.NewUserRoleRepo(tx)
+
+	oldRoles, err := urRepo.GetRoleIDsByUserID(c, userID)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve old roles: %w", err)
+	}
+
+	idsToRemove, idsToAdd := arrays.DiffCheck(oldRoles, newRoleIDs)
+
+	if len(idsToRemove) > 0 {
+		if err := urRepo.DeleteByUserIDAndRoleIDs(c, userID, idsToRemove); err != nil {
+			return fmt.Errorf("failed to delete old roles: %w", err)
+		}
+	}
+
+	if len(idsToAdd) > 0 {
+		userRoles := arrays.Map(idsToAdd, func(roleID uint) models.UserRoleInput {
+			return models.UserRoleInput{
+				UserID: userID,
+				RoleID: roleID,
+			}
+		})
+
+		if err := urRepo.BulkCreate(c, userRoles); err != nil {
+			return fmt.Errorf("failed to add new roles: %w", err)
+		}
+	}
+
+	return tx.Commit().Error
+}

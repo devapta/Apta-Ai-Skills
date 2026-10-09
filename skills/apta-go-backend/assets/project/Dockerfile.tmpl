@@ -1,0 +1,45 @@
+# Step 1: Build the application
+# We use golang:1.26-alpine because the project specifies Go 1.26.4 in go.mod
+FROM golang:1.26-alpine AS builder
+
+# Install git since swag install or dependency retrieval might require it
+RUN apk add --no-cache git
+
+# Set the working directory inside the builder stage
+WORKDIR /app
+
+# Copy dependency files first to leverage Docker layer caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Install swag tool to generate swagger documentation
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Copy the rest of the source code
+COPY . .
+
+# Generate Swagger documentation before compilation.
+RUN swag init --parseDependency --parseInternal
+
+# Build the statically linked Go application
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main .
+
+# Step 2: Final production image
+FROM alpine:latest
+
+# Install ca-certificates and tzdata for SSL/TLS and timezone support
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/main .
+
+EXPOSE __PORT__
+
+# Configure entrypoint and default command
+# This allows running migrations easily, e.g. "docker run <image> migrate"
+ENTRYPOINT ["./main"]
+CMD ["serve"]

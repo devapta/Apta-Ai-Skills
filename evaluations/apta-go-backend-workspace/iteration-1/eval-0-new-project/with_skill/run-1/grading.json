@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Project builds and vets",
+      "passed": true,
+      "evidence": "ok"
+    },
+    {
+      "text": "No leftover 'fleet' references",
+      "passed": true,
+      "evidence": "none found"
+    },
+    {
+      "text": "go.mod module is github.com/devapta/inventory-api",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Retains versioned layered layout for users/roles/user-roles",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Env defaults retained (PORT=7008)",
+      "passed": true,
+      "evidence": "['PORT=7008']"
+    },
+    {
+      "text": "S3/Infisical/NATS present in code but commented out",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Default stack present (cobra, dig, otel, swagger, slog, jwt)",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Go version in go.mod matches Dockerfile base (1.26.x)",
+      "passed": true,
+      "evidence": "['go 1.26.4']"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

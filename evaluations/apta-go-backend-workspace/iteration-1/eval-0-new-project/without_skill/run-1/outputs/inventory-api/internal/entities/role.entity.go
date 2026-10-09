@@ -1,0 +1,13 @@
+package entities
+
+import (
+	"github.com/devapta/inventory-api/pkg/jsonb"
+	"gorm.io/gorm"
+)
+
+type Role struct {
+	gorm.Model
+	Name        string                `gorm:"not null" json:"name"`
+	Description string                `gorm:"not null" json:"description"`
+	Permissions jsonb.JSONB[[]string] `json:"permissions"`
+}

@@ -1,0 +1,39 @@
+package common
+
+import (
+	"net/http"
+	"time"
+
+	"__MODULE__/internal/configs"
+	"__MODULE__/internal/enums"
+	"github.com/gin-gonic/gin"
+)
+
+func GenerateCookies(c *gin.Context, at string, rt string, isRemember bool) {
+	atExp := time.Minute * configs.Env.JwtExpiryMinutes
+	rtExp := enums.Day
+	if isRemember {
+		rtExp = enums.Month
+	}
+
+	isProd := configs.Env.ServerENV == "prod"
+
+	c.SetCookieData(&http.Cookie{
+		Name:     "at",
+		Value:    at,
+		HttpOnly: true,
+		Secure:   isProd,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(atExp.Seconds()),
+		Path:     "/",
+	})
+	c.SetCookieData(&http.Cookie{
+		Name:     "rt",
+		Value:    rt,
+		HttpOnly: true,
+		Secure:   isProd,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(rtExp.Seconds()),
+		Path:     "/",
+	})
+}

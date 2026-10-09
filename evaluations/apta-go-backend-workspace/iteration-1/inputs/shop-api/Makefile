@@ -1,0 +1,17 @@
+swag:
+	@swag init --parseDependency --parseInternal
+
+dev: swag
+	@air serve
+
+go: swag
+	@go run main.go serve
+
+migrate:
+	@go run main.go migrate
+
+migrate-force:
+	@go run main.go migrate --drop
+
+test:
+	@go test -v ./internal/tests/...

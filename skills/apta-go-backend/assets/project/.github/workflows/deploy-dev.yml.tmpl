@@ -1,0 +1,70 @@
+name: Build and Deploy to Dev
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+    
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to private Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.apta.works
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: registry.apta.works/__APP_NAME__:latest
+
+  deploy:
+    name: Deploy on Dev Server
+    needs: build
+    runs-on: [self-hosted, dev]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to private Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.apta.works
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Write .env from Infisical
+        uses: Infisical/secrets-action@v1.0.12
+        with:
+          method: "universal"
+          domain: "https://infisical.apta.works"   # self-hosted instance URL
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: "__APP_NAME__-pj-ni"
+          env-slug: "dev"
+          export-type: "file"
+          file-output-path: "/.env"
+
+      - name: Pull Latest Image and Restart Stack
+        run: |
+          docker compose -f docker-compose.dev.yml pull
+          docker compose -f docker-compose.dev.yml down
+          docker compose -f docker-compose.dev.yml up -d
+

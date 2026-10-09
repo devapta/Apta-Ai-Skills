@@ -1,0 +1,28 @@
+services:
+  shop-api-migrate:
+    image: registry.apta.works/shop-api:latest
+    pull_policy: always
+    container_name: shop-api-migrate
+    networks:
+      - infra-app
+    env_file:
+      - .env
+    command: ["migrate"]
+
+  shop-api:
+    image: registry.apta.works/shop-api:latest
+    pull_policy: always
+    container_name: shop-api
+    restart: always
+    networks:
+      - infra-app
+    env_file:
+      - .env
+    depends_on:
+      shop-api-migrate:
+        condition: service_completed_successfully
+
+networks:
+  infra-app:
+    external: true
+    name: infra-app

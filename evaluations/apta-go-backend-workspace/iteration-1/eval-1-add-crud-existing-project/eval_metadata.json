@@ -1,0 +1,1 @@
+{"eval_id":1,"eval_name":"add-crud-existing-project","prompt":"In this project add a CRUD endpoint for warehouses: name (required, unique), capacity (int), ownerId (references a user), plus a commissionedAt date.","assertions":[]}

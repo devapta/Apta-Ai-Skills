@@ -10,6 +10,7 @@ project gets the same skills. Linux-only team — bash + coreutils, nothing else
 | Skill | Description |
 | --- | --- |
 | [`apta-superskill`](skills/apta-superskill/) | React + TypeScript + Vite + Tailwind/shadcn frontend standard: architecture, component patterns, API layer, styling. |
+| [`apta-go-backend`](skills/apta-go-backend/) | Go + Gin backend generator modeled on fleet-backend: scaffold a new project (GORM/Postgres, JWT, users/roles/user-roles, slog, Swagger, cobra, dig, OpenTelemetry), add CRUD endpoints, enable optional S3/Infisical/NATS. |
 
 Run `./install.sh --list` for the live list and which agents each skill supports.
 
@@ -63,12 +64,31 @@ Then **commit the created directories** to the target project.
 | `--agent NAME` | Install for `claude-code`, `codex`, `opencode`, or `antigravity` (repeatable). |
 | `--skill NAME` | Install — or with `--uninstall`, remove — only skill `NAME` (repeatable). Default: all skills. |
 | `--target DIR` | Target project directory (default: current directory). |
+| `--global` | Install into your home directory (`$HOME`) for every project instead of one project; nothing to commit. Not available for `antigravity`. Mutually exclusive with `--target`. |
 | `--force` | Overwrite — or with `--uninstall`, delete — files that differ from this repo. |
 | `--uninstall` | Remove exactly the files this script would create; refuses locally-modified files unless `--force`. |
 | `--list` | Show available skills and which agents each supports. |
 
 Re-running the installer refreshes in place: identical files are left alone, files
 that differ block the run (their paths are listed) unless `--force`.
+
+### Global install
+
+A plain `./install.sh` in a terminal first asks where to install — `Project` (default) or `Global` — then the agent and skill pickers. Or pass `--global` directly: it copies the skills under `$HOME` so every project on your machine gets them
+(restart the agent afterwards):
+
+```bash
+./install.sh --global --agent claude-code --agent codex      # or omit --agent for the picker
+```
+
+| Agent | Global path |
+| --- | --- |
+| claude-code | `~/.claude/skills/<name>/` |
+| codex | `~/.agents/skills/<name>/` |
+| opencode | `~/.agents/skills/<name>/` when codex is also selected, otherwise `~/.config/opencode/skills/<name>/` |
+
+Antigravity only reads project rules (`.agents/rules/`), so it stays project-only.
+`--uninstall --global` removes exactly what it installed.
 
 ## Agents & project paths
 

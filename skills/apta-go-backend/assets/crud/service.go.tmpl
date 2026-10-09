@@ -1,0 +1,52 @@
+package services
+
+import (
+	"context"
+
+	"__MODULE__/internal/common"
+	"__MODULE__/internal/entities"
+	"__MODULE__/internal/v1/models"
+	"__MODULE__/internal/v1/repositories"
+	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
+)
+
+type I__Entity__Service interface {
+	common.IBaseCrudService[
+		entities.__Entity__,
+		models.__Entity__Input,
+		models.__Entity__Page,
+	]
+}
+
+type __Entity__Service struct {
+	repo repositories.I__Entity__Repo
+}
+
+var _ I__Entity__Service = &__Entity__Service{}
+
+func New__Entity__Service(repo repositories.I__Entity__Repo) *__Entity__Service {
+	return &__Entity__Service{
+		repo: repo,
+	}
+}
+
+func (s *__Entity__Service) Create(c context.Context, input models.__Entity__Input) (uint, error) {
+	return s.repo.Create(c, input)
+}
+
+func (s *__Entity__Service) Read(c *gin.Context) (paginate.Page, []models.__Entity__Page) {
+	return s.repo.Read(c)
+}
+
+func (s *__Entity__Service) Update(c context.Context, id any, input models.__Entity__Input) error {
+	return s.repo.Update(c, id, input)
+}
+
+func (s *__Entity__Service) Delete(c context.Context, id any) error {
+	return s.repo.Delete(c, id)
+}
+
+func (s *__Entity__Service) GetByID(c context.Context, id any) (entities.__Entity__, error) {
+	return s.repo.GetByID(c, id)
+}

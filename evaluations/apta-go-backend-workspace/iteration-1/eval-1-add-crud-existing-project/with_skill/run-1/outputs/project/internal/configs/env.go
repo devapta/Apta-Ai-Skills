@@ -1,0 +1,102 @@
+package configs
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/alexedwards/argon2id"
+	"github.com/joho/godotenv"
+)
+
+type env struct {
+	PORT             string
+	DBPort           string
+	DBUser           string
+	DBPassword       string
+	DBName           string
+	DBHost           string
+	DBSchema         string
+	JwtSecret        string
+	ServerENV        string
+	ServerID         string
+	DefaultUser      string
+	DefaultEmail     string
+	DefaultPassword  string
+	JwtExpiryMinutes time.Duration
+	OTLPEndpoint     string
+	OTLPServiceName  string
+	CorsAllowOrigins []string
+
+	// Infisical (optional): uncomment together with internal/configs/infisical.go
+	// InfisicalClientID     string
+	// InfisicalClientSecret string
+	// InfisicalBaseURL      string
+	// InfisicalKMPSign      string
+
+	// S3 (optional): uncomment together with internal/configs/s3.go
+	// AWSAccessKeyID     string
+	// AWSSecretAccessKey string
+	// AWSDefaultRegion   string
+	// AWSURL             string
+	// AWSBucket          string
+
+	// NATS (optional): uncomment together with internal/configs/nats.go
+	// NATSURI string
+}
+
+var Env *env
+
+func SetupENV() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	envMinutes := os.Getenv("JWT_EXPIRY_MINUTES")
+	minutes, err := strconv.Atoi(envMinutes)
+	if err != nil {
+		minutes = 5
+	}
+
+	defaultPassword, _ := argon2id.CreateHash(os.Getenv("DEFAULT_PASSWORD"), argon2id.DefaultParams)
+	corsAllowOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
+	corsAllowOrigins = strings.ReplaceAll(corsAllowOrigins, " ", "")
+
+	Env = &env{
+		PORT:             os.Getenv("PORT"),
+		DBPort:           os.Getenv("DB_PORT"),
+		DBUser:           os.Getenv("DB_USER"),
+		DBPassword:       os.Getenv("DB_PASSWORD"),
+		DBName:           os.Getenv("DB_NAME"),
+		DBHost:           os.Getenv("DB_HOST"),
+		DBSchema:         os.Getenv("DB_SCHEMA"),
+		JwtSecret:        os.Getenv("JWT_SECRET"),
+		JwtExpiryMinutes: time.Duration(minutes),
+		ServerENV:        os.Getenv("SERVER_ENV"),
+		ServerID:         os.Getenv("SERVER_ID"),
+		DefaultUser:      os.Getenv("DEFAULT_USER"),
+		DefaultEmail:     os.Getenv("DEFAULT_EMAIL"),
+		DefaultPassword:  defaultPassword,
+		OTLPEndpoint:     os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+		CorsAllowOrigins: strings.Split(corsAllowOrigins, ","),
+
+		// InfisicalClientID:     os.Getenv("INFISICAL_UNIVERSAL_AUTH_CLIENT_ID"),
+		// InfisicalClientSecret: os.Getenv("INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET"),
+		// InfisicalBaseURL:      os.Getenv("INFISICAL_BASE_URL"),
+		// InfisicalKMPSign:      os.Getenv("INFISICAL_KMP_SIGN"),
+
+		// AWSAccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+		// AWSSecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		// AWSDefaultRegion:   os.Getenv("AWS_DEFAULT_REGION"),
+		// AWSURL:             os.Getenv("AWS_URL"),
+		// AWSBucket:          os.Getenv("AWS_BUCKET"),
+
+		// NATSURI: os.Getenv("NATS_URI"),
+	}
+
+	Env.OTLPServiceName = fmt.Sprintf("shop-api.%s.%s", Env.ServerID, Env.ServerENV)
+}

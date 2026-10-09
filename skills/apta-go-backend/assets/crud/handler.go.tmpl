@@ -1,0 +1,150 @@
+package handlers
+
+import (
+	"net/http"
+
+	"__MODULE__/internal/common"
+	"__MODULE__/internal/entities"
+	"__MODULE__/internal/v1/models"
+	"__MODULE__/internal/v1/services"
+	"github.com/gin-gonic/gin"
+	_ "github.com/morkid/paginate"
+)
+
+type __Entity__Handler struct {
+	service services.I__Entity__Service
+}
+
+var _ = entities.__Entity__{}
+
+func New__Entity__Handler(service services.I__Entity__Service) *__Entity__Handler {
+	return &__Entity__Handler{
+		service: service,
+	}
+}
+
+// Create godoc
+// @Summary			Create __entity_human__
+// @Description		Create a new __entity_human__
+// @Tags 			__entities-kebab__
+// @Accept 			json
+// @Produce 		json
+// @Param 			__entity__	body	models.__Entity__Input		true	"__Entity_human__ payload"
+// @Success			201	{object}	common.Result[uint]
+// @Failure			400	{object}	common.Result[string]
+// @Failure     	412	{object}  	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security 		ApiKeyAuth
+// @Router 			/v1/__entities-kebab__ [post]
+func (h *__Entity__Handler) Create(c *gin.Context) {
+	var __entity__ models.__Entity__Input
+	if err := c.ShouldBindJSON(&__entity__); err != nil {
+		_, res := common.ResultErr(err, "failed parsing json")
+		c.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	id, err := h.service.Create(c.Request.Context(), __entity__)
+	if err != nil {
+		c.JSON(common.ResultErr(err, "failed creating __entity_human__"))
+		return
+	}
+
+	c.JSON(http.StatusCreated, common.ResultOk(id, "__Entity_human__ created"))
+}
+
+// Read godoc
+// @Summary			List __entities_human__
+// @Description  	Get a paginated list of __entities_human__
+// @Tags         	__entities-kebab__
+// @Accept       	json
+// @Produce      	json
+// @Param        	page     query     int     false  "Page"
+// @Param        	size     query     int     false  "Size"
+// @Param        	sort     query     string  false  "Sort"
+// @Param        	filters  query     string  false  "Filter"
+// @Success      	200	{object}	paginate.Page{items=[]models.__Entity__Page}
+// @Failure      	401 {object}	common.Result[string]
+// @Failure      	500 {object}	common.Result[string]
+// @Security     	ApiKeyAuth
+// @Router 			/v1/__entities-kebab__ [get]
+func (h *__Entity__Handler) Read(c *gin.Context) {
+	__entities__, _ := h.service.Read(c)
+
+	c.JSON(http.StatusOK, __entities__)
+}
+
+// Update godoc
+// @Summary			Update __entity_human__
+// @Description		Update an existing __entity_human__'s details
+// @Tags			__entities-kebab__
+// @Accept			json
+// @Produce			json
+// @Param			id	path	int		true	"__Entity_human__ ID"
+// @Param			__entity__	body	models.__Entity__Input		true	"Updated __entity_human__ details"
+// @Success			200	{object}	common.Result[any]
+// @Failure			400	{object}	common.Result[string]
+// @Failure     	401 {object}  	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security		ApiKeyAuth
+// @Router 			/v1/__entities-kebab__/{id} [put]
+func (h *__Entity__Handler) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var __entity__ models.__Entity__Input
+	if err := c.ShouldBindJSON(&__entity__); err != nil {
+		_, res := common.ResultErr(err, "failed parsing json")
+		c.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	if err := h.service.Update(c.Request.Context(), id, __entity__); err != nil {
+		c.JSON(common.ResultErr(err, "failed updating __entity_human__"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk[any](nil, "__Entity_human__ updated"))
+}
+
+// Delete godoc
+// @Summary			Delete __entity_human__
+// @Description		Delete a __entity_human__ by ID
+// @Tags			__entities-kebab__
+// @Produce			json
+// @Param			id	path	int		true	"__Entity_human__ ID"
+// @Success			200	{object}	common.Result[any]
+// @Failure      	401 {object}	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security		ApiKeyAuth
+// @Router 			/v1/__entities-kebab__/{id} [delete]
+func (h *__Entity__Handler) Delete(c *gin.Context) {
+	if err := h.service.Delete(c.Request.Context(), c.Param("id")); err != nil {
+		c.JSON(common.ResultErr(err, "failed deleting __entity_human__"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk[any](nil, "__Entity_human__ deleted"))
+}
+
+// GetByID godoc
+// @Summary			Get __entity_human__ by ID
+// @Description		Get detailed information about a __entity_human__ by ID
+// @Tags			__entities-kebab__
+// @Accept       	json
+// @Produce      	json
+// @Param        	id       path      string  true   "__Entity_human__ ID"
+// @Param        	scope    query     string  false  "Scope"
+// @Success    		200	{object}	common.Result[entities.__Entity__]
+// @Failure    		401 {object}  	common.Result[string]
+// @Failure  	    500 {object}  	common.Result[string]
+// @Security 	    ApiKeyAuth
+// @Router 			/v1/__entities-kebab__/{id} [get]
+func (h *__Entity__Handler) GetByID(c *gin.Context) {
+	__entity__, err := h.service.GetByID(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(common.ResultErr(err, "failed getting __entity_human__"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk(__entity__, "__Entity_human__ found"))
+}

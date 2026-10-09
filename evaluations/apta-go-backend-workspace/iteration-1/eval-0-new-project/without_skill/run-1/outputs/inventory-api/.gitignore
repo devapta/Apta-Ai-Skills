@@ -1,0 +1,11 @@
+.env
+.env.*
+!example.env
+
+docs/*
+!docs/docs.go
+
+tmp/*
+bin/
+
+public/uploads/*

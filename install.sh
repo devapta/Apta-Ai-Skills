@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# install.sh — copy this repo's Agent Skills into a target project (project-scoped).
+# install.sh — copy this repo's Agent Skills into a target project (project-scoped),
+# or into the user's home for every project (--global).
 #
 # Run from inside the target project (or pass --target DIR). Skills are COPIED,
 # never symlinked, so the target team commits them and every clone gets them.
@@ -28,35 +29,38 @@ AGENTS=(claude-code codex opencode antigravity)
 
 ACTION="install"      # install | uninstall | list
 FORCE=0
+GLOBAL=0
 TARGET=""
 SELECTED=()   # agents
 SKILL_SEL=()  # skills picked via --skill (empty = all)
 
 usage() {
   cat <<'EOF'
-Usage: install.sh [--agent NAME]... [--skill NAME]... [--target DIR] [--force] [--uninstall] [--list]
+Usage: install.sh [--agent NAME]... [--skill NAME]... [--target DIR | --global] [--force] [--uninstall] [--list]
 
 Copies the selected skills (default: all) into the target project's per-agent
 skill directories. Default target: the current directory (run inside the project).
 Copy is the only mode — commit the results to the target project.
 
-  (no --agent)   Interactive checkbox pickers: agents, then skills
+  (no --agent)   Interactive pickers: scope (Project/Global), then agents, then skills
                  (↑/↓ move · space toggle · enter confirm).
   --agent NAME   Install for NAME, repeatable: claude-code codex opencode antigravity.
   --skill NAME   Install (or uninstall) only skill NAME, repeatable — see --list.
                  Default without --skill: every skill in this repo.
   --target DIR   Target project directory (default: current directory).
+  --global       Install into your home directory ($HOME) so every project gets the
+                 skills; nothing to commit. Excludes antigravity (no global rules dir).
   --force        Overwrite (or, with --uninstall, delete) files that differ from this repo.
   --uninstall    Remove exactly the files this script would create; refuses
                  locally-modified files unless --force.
   --list         List available skills and which agents each supports.
   -h, --help     This help.
 
-Destinations inside the target project:
+Destinations inside the target project (with --global: relative to $HOME):
   claude-code   .claude/skills/<name>/   full skill folder (no antigravity/ subdir)
   codex         .agents/skills/<name>/   full skill folder
   opencode      .agents/skills/<name>/ when codex is also selected (both read that
-                dir), otherwise .opencode/skills/<name>/
+                dir), otherwise .opencode/skills/<name>/ (global: .config/opencode/skills/)
   antigravity   .agents/rules/           each skill's antigravity/*.md, copied flat
 EOF
   exit "${1:-0}"
@@ -81,11 +85,14 @@ selected() { # selected NAME -> true if NAME was chosen
 # pick TITLE ITEM... → echoes each checked ITEM to stdout, one per line.
 # Pure bash + ANSI: ↑/↓ move, space toggles, enter submits (empty selection
 # re-asks). Renders to stderr so stdout stays machine-readable. Needs a TTY.
+# With PICK_SINGLE=1 it is a radio list: first item preselected, space picks only the
+# highlighted row.
 pick() {
   local title="$1"; shift
   local items=("$@") state=() cur=0 printed=0 key ext any=0 i mark saved
   local hint="↑/↓ move · space toggle · enter confirm"
   for i in "${!items[@]}"; do state+=(0); done
+  if [[ "${PICK_SINGLE:-0}" == 1 ]]; then state[0]=1; fi
   # bash dies on SIGINT received while blocked in `read` without running any
   # trap — so switch the tty out of signal mode for the picker and treat the
   # raw Ctrl-C byte as a key. stty is coreutils; needs pick's stdin = the TTY.
@@ -118,7 +125,12 @@ pick() {
           '[A') (( cur > 0 )) && cur=$((cur - 1)) ;;
           '[B') (( cur < ${#items[@]} - 1 )) && cur=$((cur + 1)) ;;
         esac ;;
-      ' ') state[cur]=$(( 1 - state[cur] )) ;;
+      ' ') if [[ "${PICK_SINGLE:-0}" == 1 ]]; then
+             for i in "${!items[@]}"; do state[i]=0; done
+             state[cur]=1
+           else
+             state[cur]=$(( 1 - state[cur] ))
+           fi ;;
       '') # enter — never proceed on an empty selection
         any=0
         for i in "${!items[@]}"; do (( state[i] )) && any=1; done
@@ -138,6 +150,7 @@ while [[ $# -gt 0 ]]; do
     --agent)     [[ -n "${2:-}" ]] || die "--agent needs a value"; add_agent "$2"; shift 2 ;;
     --skill)     [[ -n "${2:-}" ]] || die "--skill needs a value"; SKILL_SEL+=("$2"); shift 2 ;;
     --target)    [[ -n "${2:-}" ]] || die "--target needs a value"; TARGET="$2"; shift 2 ;;
+    --global)    GLOBAL=1; shift ;;
     --force)     FORCE=1; shift ;;
     --uninstall) ACTION="uninstall"; shift ;;
     --list)      ACTION="list"; shift ;;
@@ -180,6 +193,23 @@ if [[ "$ACTION" == "list" ]]; then
   exit 0
 fi
 
+# --- scope selection ---------------------------------------------------------------
+# Plain interactive run (no --agent/--skill/--global/--target, TTY): ask Project vs Global.
+if [[ ${#SELECTED[@]} -eq 0 && ${#SKILL_SEL[@]} -eq 0 && $GLOBAL -eq 0 && -z "$TARGET" && -t 0 ]]; then
+  scope_choice="$(PICK_SINGLE=1 pick "Install where?" "Project" "Global")"
+  if [[ "$scope_choice" == "Global" ]]; then GLOBAL=1; fi
+fi
+
+if [[ $GLOBAL -eq 1 ]]; then
+  [[ -z "$TARGET" ]] || die "--global and --target are mutually exclusive"
+  [[ -n "${HOME:-}" && -d "$HOME" ]] || die "--global needs a valid \$HOME"
+  TARGET="$HOME"
+  OPENCODE_DIR=".config/opencode/skills"
+  AGENTS=(claude-code codex opencode)   # antigravity has no global rules directory
+  if selected antigravity; then die "antigravity is project-only (no global rules directory); drop it or omit --global"; fi
+else
+  OPENCODE_DIR=".opencode/skills"
+fi
 TARGET="${TARGET:-$PWD}"
 [[ -d "$TARGET" ]] || die "target directory not found: $TARGET"
 TARGET="$(cd "$TARGET" && pwd)"
@@ -260,14 +290,15 @@ run_antigravity() {
 }
 
 # --- main ----------------------------------------------------------------------
-echo "== apta-skills: $ACTION ${#SKILLS[@]} skill(s) into $TARGET =="
+scope="project"; [[ $GLOBAL -eq 1 ]] && scope="global" || true
+echo "== apta-skills: $ACTION ${#SKILLS[@]} skill(s) into $TARGET ($scope) =="
 if selected claude-code; then run_skill_dir "claude-code" ".claude/skills"; fi
 if selected codex && selected opencode; then
   run_skill_dir "codex + opencode (shared dir)" ".agents/skills"
 elif selected codex; then
   run_skill_dir "codex" ".agents/skills"
 elif selected opencode; then
-  run_skill_dir "opencode" ".opencode/skills"
+  run_skill_dir "opencode" "$OPENCODE_DIR"
 fi
 if selected antigravity; then run_antigravity; fi
 
@@ -278,4 +309,4 @@ if [[ ${#CONFLICTS[@]} -gt 0 ]]; then
   printf '  %s\n' "${CONFLICTS[@]}" >&2
   exit 1
 fi
-echo "Done."
+if [[ $GLOBAL -eq 1 && "$ACTION" == "install" ]]; then echo "Done. Installed globally - restart your agent so it picks the skills up."; else echo "Done."; fi

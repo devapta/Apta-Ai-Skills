@@ -1,0 +1,28 @@
+services:
+  inventory-api-migrate:
+    image: registry.apta.works/inventory-api:latest
+    pull_policy: always
+    container_name: inventory-api-migrate
+    networks:
+      - infra-app
+    env_file:
+      - .env
+    command: ["migrate"]
+
+  inventory-api:
+    image: registry.apta.works/inventory-api:latest
+    pull_policy: always
+    container_name: inventory-api
+    restart: always
+    networks:
+      - infra-app
+    env_file:
+      - .env
+    depends_on:
+      inventory-api-migrate:
+        condition: service_completed_successfully
+
+networks:
+  infra-app:
+    external: true
+    name: infra-app

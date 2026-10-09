@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Project builds and vets",
+      "passed": false,
+      "evidence": "# github.com/devapta/inventory-api/docs\ndocs/docs.go:1515:2: unknown field LeftDelim in struct literal of type swag.Spec\ndocs/docs.go:1516:2: unknown field RightDelim in struct literal of type swag.Sp"
+    },
+    {
+      "text": "No leftover 'fleet' references",
+      "passed": true,
+      "evidence": "none found"
+    },
+    {
+      "text": "go.mod module is github.com/devapta/inventory-api",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Retains versioned layered layout for users/roles/user-roles",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Env defaults retained (PORT=7008)",
+      "passed": false,
+      "evidence": "['PORT=7009']"
+    },
+    {
+      "text": "S3/Infisical/NATS present in code but commented out",
+      "passed": false,
+      "evidence": ""
+    },
+    {
+      "text": "Default stack present (cobra, dig, otel, swagger, slog, jwt)",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "Go version in go.mod matches Dockerfile base (1.26.x)",
+      "passed": false,
+      "evidence": "['go 1.27.1']"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 4,
+    "total": 8,
+    "pass_rate": 0.5
+  }
+}

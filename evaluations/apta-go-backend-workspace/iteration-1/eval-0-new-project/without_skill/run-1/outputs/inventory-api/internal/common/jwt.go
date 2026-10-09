@@ -1,0 +1,108 @@
+package common
+
+import (
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/devapta/inventory-api/internal/configs"
+	"github.com/devapta/inventory-api/internal/enums"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+var ErrNotStringSlice = errors.New("not string slice")
+
+func GenerateJWTPair(claims map[string]any, permissions any, isRemember bool) (string, string, error) {
+	today := time.Now()
+	atExp := time.Minute * configs.Env.JwtExpiryMinutes
+	rtExp := enums.Day
+	if isRemember {
+		rtExp = enums.Month
+	}
+
+	atClaims := jwt.MapClaims{
+		"iat":         today.Unix(),
+		"exp":         today.Add(atExp).Unix(),
+		"permissions": permissions,
+	}
+
+	rtClaims := jwt.MapClaims{
+		"iat":        today.Unix(),
+		"exp":        today.Add(rtExp).Unix(),
+		"isRemember": isRemember,
+	}
+
+	for k, v := range claims {
+		atClaims[k] = v
+		rtClaims[k] = v
+	}
+
+	at, err := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims).SignedString([]byte(configs.Env.JwtSecret))
+	if err != nil {
+		return "", "", fmt.Errorf("failed generating access token: %w", err)
+	}
+
+	rt, err := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims).SignedString([]byte(configs.Env.JwtSecret))
+	if err != nil {
+		return "", "", fmt.Errorf("failed generating refresh token: %w", err)
+	}
+
+	return at, rt, nil
+}
+
+// func FiberCtxToClaims(c fiber.Ctx) jwt.MapClaims {
+// 	token := jwtware.FromContext(c)
+// 	return token.Claims.(jwt.MapClaims)
+// }
+
+func ParseToken(tokenStr string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(configs.Env.JwtSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, fmt.Errorf("invalid token")
+}
+
+func ParseClaimsToStringSlice(v any) ([]string, error) {
+	strs, ok := v.([]string)
+	if ok {
+		return strs, nil
+	}
+
+	items, ok := v.([]any)
+	if !ok {
+		return nil, ErrNotStringSlice
+	}
+
+	result := make([]string, 0, len(items))
+
+	for _, item := range items {
+		s, ok := item.(string)
+		if !ok {
+			return nil, ErrNotStringSlice
+		}
+		result = append(result, s)
+	}
+
+	return result, nil
+
+}
+
+func MustGet[T any](c *gin.Context, key string) (T, error) {
+	var t T
+	t, ok := c.MustGet(key).(T)
+	if !ok {
+		return t, fmt.Errorf("value for key %s is not of type %T", key, t)
+	}
+
+	return t, nil
+}

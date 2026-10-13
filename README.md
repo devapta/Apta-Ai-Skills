@@ -16,7 +16,32 @@ Run `./install.sh --list` for the live list and which agents each skill supports
 
 ## Quick start
 
-From inside the target project (no clone needed — needs `gh` authenticated, repo is private):
+This repo is compatible with the [`skills`](https://github.com/vercel-labs/skills) CLI.
+From inside the target project (needs git access to the private repo):
+
+```bash
+npx skills add devapta/Apta-Ai-Skills
+```
+
+It prompts for the skills and agents to install. Useful flags:
+
+```bash
+npx skills add devapta/Apta-Ai-Skills --list                              # list available skills
+npx skills add devapta/Apta-Ai-Skills --skill apta-superskill -a claude-code
+npx skills add devapta/Apta-Ai-Skills --all                               # every skill, every agent
+npx skills add devapta/Apta-Ai-Skills -g -a claude-code -y                # global, non-interactive
+npx skills add devapta/Apta-Ai-Skills --copy                              # copy files instead of symlinking
+```
+
+By default the CLI installs into the current project (`-g`/`--global` installs for
+your user). Then **commit the created directories**. Remove skills with
+`npx skills remove`. See `npx skills add --help` for all options.
+
+## Alternative: `install.sh`
+
+The repo's own installer is still available. It always copies (never symlinks), and
+it is the only route that installs the Antigravity rules (`.agents/rules/`). From
+inside the target project (no clone needed — needs `gh` authenticated, repo is private):
 
 ```bash
 gh api repos/devapta/Apta-Ai-Skills/contents/install.sh --jq .content \
@@ -57,7 +82,7 @@ With one or more `--skill NAME` flags, only those skills:
 
 Then **commit the created directories** to the target project.
 
-### Flags
+### `install.sh` flags
 
 | Flag | Effect |
 | --- | --- |

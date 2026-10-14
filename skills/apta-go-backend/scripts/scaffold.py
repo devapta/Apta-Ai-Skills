@@ -148,6 +148,8 @@ def parse_field(spec):
     if len(parts) < 2 or parts[1] not in GO_TYPES:
         die(f"bad --field '{spec}': use name:type[:unique][:notnull], type in {sorted(GO_TYPES)}")
     ws = words(parts[0])
+    if ws == ["id"]:
+        die("bad --field '%s': 'id' already exists on every entity (gorm.Model)" % spec)
     mods = set(parts[2:])
     unknown = mods - {"unique", "notnull"}
     if unknown:

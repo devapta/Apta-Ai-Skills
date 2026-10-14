@@ -41,6 +41,11 @@ def pascal(ws):
     return "".join("ID" if w == "id" else w.capitalize() for w in ws)
 
 
+def json_name(ws):
+    """JSON tag style: lowerCamel with abbreviations treated as plain words (user id -> userId, not userID)."""
+    return ws[0] + "".join(w.capitalize() for w in ws[1:])
+
+
 def camel(ws):
     p = pascal(ws)
     return p[0].lower() + p[1:] if ws[0] != "id" else "id" + p[2:]
@@ -149,7 +154,7 @@ def parse_field(spec):
         die(f"bad --field '{spec}': unknown modifier(s) {sorted(unknown)}")
     gorm = [m for m in ("not null" if "notnull" in mods else None, "unique" if "unique" in mods else None,
                         "type:date" if parts[1] == "date" else None) if m]
-    return pascal(ws), GO_TYPES[parts[1]], camel(ws), ";".join(gorm), "notnull" in mods
+    return pascal(ws), GO_TYPES[parts[1]], json_name(ws), ";".join(gorm), "notnull" in mods
 
 
 def insert(path, marker, line, after=False):

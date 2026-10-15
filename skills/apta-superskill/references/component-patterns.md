@@ -28,6 +28,9 @@ Use functional components with hooks. Do not use class components.
 
 A component should either own data or render UI from props. Avoid mixing data fetching, deep rendering logic, and business logic in one large file.
 
+- Extract repeated JSX into smaller components.
+- Extract complex state or data logic into custom hooks.
+
 Preferred feature component shape:
 
 ```tsx

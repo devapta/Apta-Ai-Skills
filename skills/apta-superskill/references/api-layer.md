@@ -100,7 +100,7 @@ export function useProductList() {
 }
 ```
 
-If a project has complex caching, pagination, invalidation, or refetching needs, propose TanStack Query as an explicit stack decision.
+If a project has complex caching, pagination, invalidation, or refetching needs, propose TanStack Query as an explicit stack decision instead of silently adding it.
 
 ## Error Shape
 

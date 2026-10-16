@@ -1,0 +1,83 @@
+# __APP_TITLE__
+
+__APP_TITLE__ is a Gin and GORM backend split into a **local** (on-site) service and a **cloud**
+service that share one set of entities and helpers.
+
+Both services ship with PostgreSQL persistence, Swagger annotations, OpenTelemetry traces/logs/metrics,
+slog request and GORM logging, cobra commands and uber/dig dependency injection. The cloud service adds
+JWT authentication with users, roles and user-roles. S3, Infisical and NATS are included in the codebase
+but commented out; see the `apta-go-local-cloud` skill (`references/optional-modules.md`) to enable them.
+
+## Getting started
+
+Run these from `local/` or `cloud/` (each has its own `.env`):
+
+```bash
+cp example.env .env      # configure database, OTLP (and JWT on cloud) settings
+make swag                # generate swagger docs (docs/ is git-ignored)
+make migrate             # migrate the database (cloud also seeds the default admin user)
+make go                  # run the API (or `make dev` for live reload with air)
+```
+
+Swagger UI: local `http://localhost:__LOCAL_PORT__/swagger/index.html`, cloud `http://localhost:__CLOUD_PORT__/swagger/index.html`.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `make swag` | Regenerate swagger docs |
+| `make dev` | Live reload with `air` |
+| `make go` | Run the API server |
+| `make migrate` | Migrate the database (cloud: and seed the default user) |
+| `make migrate-force` | Drop all tables, then migrate |
+| `make test` | Run this module's tests (shared tests: `go test ./shared/...`) |
+| `make secret` | Print a random value for `JWT_SECRET` |
+
+## Workspace layout
+
+`go.work` ties three modules together:
+
+| Module | Purpose |
+|--------|---------|
+| `shared/` | Entities, enums, common helpers, `pkg/*`. Depends only on third-party packages, never on `local` or `cloud`. |
+| `local/` | Local (on-site) service. Open API (no authn/authz) because it runs on the site network; announces itself via mDNS (`__MDNS_TYPE__`). Runs on port __LOCAL_PORT__ by default. |
+| `cloud/` | Cloud service: authn/authz on, schema-scoped reads (`?scope=<site>`, sites listed at `GET /api/v1/sites`). Runs on port __CLOUD_PORT__ by default. |
+
+Each module's `go.mod` also carries a `replace` for `../shared` so `go mod tidy` and Docker builds work
+without the workspace. Build images from the repo root: `docker build -f local/Dockerfile .` and
+`docker build -f cloud/Dockerfile .`.
+
+## How data moves between local and cloud
+
+Each site runs its own **local** service with its own PostgreSQL database. A single **cloud** service
+gives head office a combined view of every site. Every table has exactly one **authority**: the side where
+that data is created and edited. The other side only holds a read-only copy.
+
+| Table | Authority (edit here) | Copy lives on | Direction |
+| --- | --- | --- | --- |
+<!-- scaffold:authority -->
+
+Add rows with `scaffold.py crud --authority local|cloud`; the generator exposes write endpoints only on the
+authority side and `GET` endpoints on the other.
+
+### Where each site's data lands in the cloud
+
+The cloud database keeps its own data in the main schema (`DB_SCHEMA`, default `public`) and one extra
+schema per site holding that site's replicated rows. Reads on the cloud API pick one with the `scope` query
+parameter:
+
+| Request | Returns |
+| --- | --- |
+| `GET /api/v1/sites` | The list of site schemas |
+| `GET /api/v1/<resource>` | Main schema (no `scope`) |
+| `GET /api/v1/<resource>?scope=<site>` | That site's rows |
+
+An unknown `scope` is rejected with `400`. `scope` is only supported on `GET`; writes always go to the main schema.
+
+### Good to know
+
+- The sync is done at the database level (PeerDB), not by application code. Neither service calls the other
+  over HTTP, and the replication setup lives outside this repository. Tables whose authority is the cloud get
+  PeerDB bookkeeping columns on the local database during `migrate`.
+- To add a new table, decide its authority first. It decides which side may write, and which direction the
+  replication must run.

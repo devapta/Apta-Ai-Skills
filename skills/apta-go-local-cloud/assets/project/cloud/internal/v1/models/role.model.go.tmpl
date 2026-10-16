@@ -1,0 +1,20 @@
+package models
+
+import (
+	"__MODULE__/shared/common"
+	"__MODULE__/shared/pkg/jsonb"
+)
+
+type RoleInput struct {
+	common.InputModel
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Permissions jsonb.JSONB[[]string] `json:"permissions"`
+}
+
+type RolePage struct {
+	ID          uint                  `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Permissions jsonb.JSONB[[]string] `json:"permissions"`
+}

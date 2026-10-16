@@ -1,0 +1,44 @@
+package repositories
+
+import (
+	"context"
+
+	"__MODULE__/cloud/internal/configs"
+	"gorm.io/gorm"
+)
+
+type SchemaRepo struct {
+	db *gorm.DB
+}
+
+func NewSchemaRepo(db *gorm.DB) *SchemaRepo {
+	return &SchemaRepo{
+		db: db,
+	}
+}
+
+// GetSiteSchemas lists the schemas owned by the database user, excluding system schemas and the
+// main (default) schema. Each remaining schema is one local site's replicated data.
+func (r *SchemaRepo) GetSiteSchemas(c context.Context) ([]string, error) {
+	exclusions := []string{
+		"_peerdb_internal",
+		"pg_toast",
+		"pg_catalog",
+		"information_schema",
+		"public",
+		configs.Env.DBSchema,
+	}
+
+	query := `
+		SELECT schema_name
+		FROM information_schema.schemata
+		WHERE schema_owner = ?
+		AND schema_name NOT IN ?
+		ORDER BY schema_name
+	`
+
+	var sites []string
+	err := r.db.WithContext(c).Raw(query, configs.Env.DBUser, exclusions).Pluck("schema_name", &sites).Error
+
+	return sites, err
+}

@@ -1,0 +1,40 @@
+package handlers
+
+import (
+	"net/http"
+
+	"__MODULE__/cloud/internal/v1/services"
+	"__MODULE__/shared/common"
+	"github.com/gin-gonic/gin"
+)
+
+type SiteHandler struct {
+	service *services.SchemaService
+}
+
+func NewSiteHandler(service *services.SchemaService) *SiteHandler {
+	return &SiteHandler{
+		service: service,
+	}
+}
+
+// Read godoc
+// @Summary      List sites
+// @Description  Get the schemas a request can be scoped to with the `scope` query parameter. The main schema is the default and is not listed.
+// @Tags         sites
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  common.Result[[]string]
+// @Failure      401  {object}  common.Result[string]
+// @Failure      500  {object}  common.Result[string]
+// @Security     ApiKeyAuth
+// @Router       /v1/sites [get]
+func (h *SiteHandler) Read(c *gin.Context) {
+	sites, err := h.service.GetSites(c.Request.Context())
+	if err != nil {
+		c.JSON(common.ResultErr(err, "failed to retrieve sites"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk(sites, "Sites retrieved"))
+}

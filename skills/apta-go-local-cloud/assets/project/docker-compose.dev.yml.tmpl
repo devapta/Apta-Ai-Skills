@@ -1,0 +1,51 @@
+services:
+  __APP_NAME__-local-migrate:
+    image: registry.apta.works/__APP_NAME__-local:latest
+    pull_policy: always
+    container_name: __APP_NAME__-local-migrate
+    network_mode: host
+    env_file:
+      - .env
+    command: ["migrate"]
+
+  __APP_NAME__-local:
+    image: registry.apta.works/__APP_NAME__-local:latest
+    pull_policy: always
+    container_name: __APP_NAME__-local
+    restart: always
+    network_mode: host
+    env_file:
+      - .env
+    depends_on:
+      __APP_NAME__-local-migrate:
+        condition: service_completed_successfully
+
+  __APP_NAME__-cloud-migrate:
+    image: registry.apta.works/__APP_NAME__-cloud:latest
+    pull_policy: always
+    container_name: __APP_NAME__-cloud-migrate
+    networks:
+      - infra-app
+    env_file:
+      - .env.cloud
+    command: ["migrate"]
+
+  __APP_NAME__-cloud:
+    image: registry.apta.works/__APP_NAME__-cloud:latest
+    pull_policy: always
+    container_name: __APP_NAME__-cloud
+    restart: always
+    networks:
+      - infra-app
+    env_file:
+      - .env.cloud
+    depends_on:
+      __APP_NAME__-cloud-migrate:
+        condition: service_completed_successfully
+    ports:
+      - __CLOUD_PORT__:__CLOUD_PORT__
+
+networks:
+  infra-app:
+    external: true
+    name: infra-app

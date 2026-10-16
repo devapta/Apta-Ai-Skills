@@ -1,0 +1,38 @@
+module __MODULE__/local
+
+go __GO_VERSION__
+
+require (
+	__MODULE__/shared v0.0.0
+	github.com/grandcat/zeroconf v1.0.0
+	github.com/devfeel/mapper v0.7.14
+	github.com/gin-contrib/cors v1.7.7
+	github.com/gin-gonic/gin v1.12.0
+	github.com/joho/godotenv v1.5.1
+	github.com/morkid/paginate v1.1.11
+	github.com/spf13/cobra v1.10.2
+	github.com/swaggo/files v1.0.1
+	github.com/swaggo/gin-swagger v1.6.1
+	github.com/swaggo/swag v1.16.6
+	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.3.2
+	go.opentelemetry.io/contrib/bridges/otelslog v0.19.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.69.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.69.0
+	go.opentelemetry.io/otel v1.44.0
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.20.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.44.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.44.0
+	go.opentelemetry.io/otel/log v0.20.0
+	go.opentelemetry.io/otel/sdk v1.44.0
+	go.opentelemetry.io/otel/sdk/log v0.20.0
+	go.opentelemetry.io/otel/sdk/metric v1.44.0
+	go.uber.org/dig v1.19.0
+	gorm.io/driver/postgres v1.6.0
+	gorm.io/gorm v1.31.1
+)
+
+// `replace` lets `go mod tidy` and Docker builds resolve the shared module without go.work.
+replace __MODULE__/shared => ../shared
+
+// Optional modules (disabled by default). Uncomment the code first (scaffold.py enable), then run
+// `go mod tidy` to add the dependency: S3 (aws-sdk-go-v2), Infisical (infisical/go-sdk), NATS (nats.go).

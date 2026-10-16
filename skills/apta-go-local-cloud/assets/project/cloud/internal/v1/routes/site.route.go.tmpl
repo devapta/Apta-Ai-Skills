@@ -1,0 +1,13 @@
+package routes
+
+import (
+	"__MODULE__/cloud/internal/v1/handlers"
+	"__MODULE__/cloud/internal/v1/middlewares"
+	"github.com/gin-gonic/gin"
+)
+
+func setupSiteRoutes(v1 *gin.RouterGroup, authM *middlewares.AuthMiddleware, h *handlers.SiteHandler) {
+	sites := v1.Group("/sites", authM.Authn)
+
+	sites.GET("/", h.Read)
+}

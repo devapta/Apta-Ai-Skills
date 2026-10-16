@@ -1,0 +1,71 @@
+package handlers
+
+import (
+	"net/http"
+
+	"__MODULE__/shared/common"
+	"__MODULE__/shared/entities"
+	"__MODULE__/local/internal/v1/models"
+	"__MODULE__/local/internal/v1/services"
+	"github.com/gin-gonic/gin"
+	_ "github.com/morkid/paginate"
+)
+
+type __Entity__Handler struct {
+	service services.I__Entity__Service
+}
+
+var _ = entities.__Entity__{}
+
+// swag resolves the response types named in the annotations below through this import.
+var _ = models.__Entity__Page{}
+
+func New__Entity__Handler(service services.I__Entity__Service) *__Entity__Handler {
+	return &__Entity__Handler{
+		service: service,
+	}
+}
+
+// Read godoc
+// @Summary			List __entities_human__
+// @Description  	Get a paginated list of __entities_human__
+// @Tags         	__entities-kebab__
+// @Accept       	json
+// @Produce      	json
+// @Param        	page     query     int     false  "Page"
+// @Param        	size     query     int     false  "Size"
+// @Param        	sort     query     string  false  "Sort"
+// @Param        	filters  query     string  false  "Filter"
+// @Success      	200	{object}	paginate.Page{items=[]models.__Entity__Page}
+// @Failure      	401 {object}	common.Result[string]
+// @Failure      	500 {object}	common.Result[string]
+// @Security     	ApiKeyAuth
+// @Router 			/v1/__entities-kebab__ [get]
+func (h *__Entity__Handler) Read(c *gin.Context) {
+	__entities__, _ := h.service.Read(c)
+
+	c.JSON(http.StatusOK, __entities__)
+}
+
+// GetByID godoc
+// @Summary			Get __entity_human__ by ID
+// @Description		Get detailed information about a __entity_human__ by ID
+// @Tags			__entities-kebab__
+// @Accept       	json
+// @Produce      	json
+// @Param        	id       path      string  true   "__Entity_human__ ID"
+// @Param        	scope    query     string  false  "Scope"
+// @Success    		200	{object}	common.Result[entities.__Entity__]
+// @Failure    		401 {object}  	common.Result[string]
+// @Failure  	    500 {object}  	common.Result[string]
+// @Security 	    ApiKeyAuth
+// @Router 			/v1/__entities-kebab__/{id} [get]
+func (h *__Entity__Handler) GetByID(c *gin.Context) {
+	__entity__, err := h.service.GetByID(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(common.ResultErr(err, "failed getting __entity_human__"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultOk(__entity__, "__Entity_human__ found"))
+}

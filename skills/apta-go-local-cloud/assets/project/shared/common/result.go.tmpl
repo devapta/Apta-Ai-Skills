@@ -1,0 +1,78 @@
+package common
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	"__MODULE__/shared/enums"
+	"gorm.io/gorm"
+)
+
+type Result[T any] struct {
+	Items     T      `json:"items"`
+	IsSuccess bool   `json:"isSuccess"`
+	Message   string `json:"message"`
+}
+
+type ErrorResult struct {
+	statusCode int
+	message    string
+}
+
+func NewErrorResult(statusCode int, message string) error {
+	return &ErrorResult{
+		statusCode: statusCode,
+		message:    message,
+	}
+}
+
+func (e *ErrorResult) Error() string {
+	return fmt.Sprintf("%d: %s", e.statusCode, e.message)
+}
+
+func ResultOk[T any](items T, message string) Result[T] {
+	return Result[T]{
+		Items:     items,
+		IsSuccess: true,
+		Message:   message,
+	}
+}
+
+func ResultErrV1(err error, message string) (int, Result[string]) {
+	if message == "" {
+		message = err.Error()
+	}
+
+	return StatusCodeFromError(err), Result[string]{
+		Items:     err.Error(),
+		IsSuccess: false,
+		Message:   message,
+	}
+}
+
+// v2
+func ResultErr(err error, message string) (int, Result[string]) {
+	ex, ok := errors.AsType[*ErrorResult](err)
+	if !ok {
+		return ResultErrV1(err, message)
+	}
+
+	return ex.statusCode, Result[string]{
+		Items:     err.Error(),
+		IsSuccess: false,
+		Message:   ex.message,
+	}
+}
+
+func StatusCodeFromError(err error) int {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return http.StatusNotFound
+	}
+
+	if errors.Is(err, enums.ErrAlreadyRegsitered) {
+		return http.StatusUnauthorized
+	}
+
+	return http.StatusInternalServerError
+}

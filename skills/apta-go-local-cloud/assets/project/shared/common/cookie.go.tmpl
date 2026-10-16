@@ -1,0 +1,37 @@
+package common
+
+import (
+	"net/http"
+	"time"
+
+	"__MODULE__/shared/enums"
+	"github.com/gin-gonic/gin"
+)
+
+// GenerateCookies sets the access/refresh token cookies. atExp is the access token lifetime and
+// secure should be true in production.
+func GenerateCookies(c *gin.Context, at string, rt string, isRemember bool, atExp time.Duration, secure bool) {
+	rtExp := enums.Day
+	if isRemember {
+		rtExp = enums.Month
+	}
+
+	c.SetCookieData(&http.Cookie{
+		Name:     "at",
+		Value:    at,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(atExp.Seconds()),
+		Path:     "/",
+	})
+	c.SetCookieData(&http.Cookie{
+		Name:     "rt",
+		Value:    rt,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(rtExp.Seconds()),
+		Path:     "/",
+	})
+}

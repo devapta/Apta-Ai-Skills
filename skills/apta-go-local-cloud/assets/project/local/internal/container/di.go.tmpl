@@ -1,0 +1,35 @@
+package container
+
+import (
+	"__MODULE__/local/internal/app"
+	"__MODULE__/local/internal/configs"
+	"__MODULE__/local/internal/v1/middlewares"
+	"go.uber.org/dig"
+)
+
+func New() *dig.Container {
+	c := dig.New()
+
+	c.Provide(configs.NewSlog)
+	c.Provide(configs.ConnectDB)
+	// c.Provide(configs.ConnectNats)
+	// c.Provide(configs.SetupInfisicalClient)
+	// c.Provide(configs.ConnectS3)
+
+	// scaffold:repos
+
+	// c.Provide(repositories.NewInfisicalRepo)
+	// c.Provide(repositories.NewS3Repo, dig.As(new(common.IS3Repo)))
+
+	// scaffold:services
+
+	c.Provide(middlewares.NewSlogMiddleware)
+
+	// c.Provide(consumers.NewExampleConsumer)
+
+	// scaffold:handlers
+
+	c.Provide(app.New)
+
+	return c
+}

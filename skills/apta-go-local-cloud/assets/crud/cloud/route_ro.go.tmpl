@@ -1,0 +1,15 @@
+package routes
+
+import (
+	"__MODULE__/shared/enums"
+	"__MODULE__/cloud/internal/v1/handlers"
+	"__MODULE__/cloud/internal/v1/middlewares"
+	"github.com/gin-gonic/gin"
+)
+
+func setup__Entity__Routes(v1 *gin.RouterGroup, authM *middlewares.AuthMiddleware, h *handlers.__Entity__Handler, schemaM *middlewares.SchemaMiddleware) {
+	__entities__ := v1.Group("/__entities-kebab__", authM.Authn)
+
+	__entities__.GET("/", authM.Authz(enums.Perm__Entities__Read), schemaM.SchemaRouter, h.Read)
+	__entities__.GET("/:id", authM.Authz(enums.Perm__Entities__Read), schemaM.SchemaRouter, h.GetByID)
+}

@@ -1,0 +1,22 @@
+package services
+
+import (
+	"context"
+
+	"__MODULE__/cloud/internal/v1/repositories"
+)
+
+type SchemaService struct {
+	repo *repositories.SchemaRepo
+}
+
+func NewSchemaService(repo *repositories.SchemaRepo) *SchemaService {
+	return &SchemaService{
+		repo: repo,
+	}
+}
+
+// GetSites returns the site schemas a request can be scoped to with `scope` (the main schema is the default and is not listed).
+func (s *SchemaService) GetSites(c context.Context) ([]string, error) {
+	return s.repo.GetSiteSchemas(c)
+}

@@ -1,0 +1,67 @@
+package repositories
+
+// S3 (optional module, disabled by default).
+// Uncomment this file and follow the steps in the apta-go-local-cloud skill (references/optional-modules.md).
+
+//
+// import (
+// 	"context"
+// 	"fmt"
+// 	"io"
+// 	"mime"
+// 	"path/filepath"
+//
+// 	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
+// 	"github.com/aws/aws-sdk-go-v2/service/s3"
+// 	"__MODULE__/local/internal/configs"
+// )
+//
+// type S3Repo struct {
+// 	c       *s3.Client
+// 	manager *transfermanager.Client
+// }
+//
+// func NewS3Repo(c *s3.Client) *S3Repo {
+// 	manager := transfermanager.New(c)
+// 	return &S3Repo{c: c, manager: manager}
+// }
+//
+// func (r *S3Repo) UploadFile(ctx context.Context, bucket string, file io.Reader, objectKey string) (*transfermanager.UploadObjectOutput, error) {
+// 	ext := filepath.Ext(objectKey)
+// 	contentType := mime.TypeByExtension(ext)
+// 	if contentType == "" {
+// 		contentType = "application/octet-stream"
+// 	}
+//
+// 	output, err := r.manager.UploadObject(ctx, &transfermanager.UploadObjectInput{
+// 		Bucket:      &bucket,
+// 		Body:        file,
+// 		Key:         &objectKey,
+// 		ContentType: &contentType,
+// 	})
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed uploading to s3: %w", err)
+// 	}
+//
+// 	// output, err := r.c.PutObject(ctx, &s3.PutObjectInput{
+// 	// 	Bucket:      &bucket,
+// 	// 	Body:        file,
+// 	// 	Key:         &objectKey,
+// 	// 	ContentType: &contentType,
+// 	// })
+//
+// 	return output, nil
+// }
+//
+// func (r *S3Repo) DownloadFile(ctx context.Context, objectKey string) (io.Reader, error) {
+// 	output, err := r.manager.GetObject(ctx, &transfermanager.GetObjectInput{
+// 		Bucket: &configs.Env.AWSBucket,
+// 		Key:    &objectKey,
+// 	})
+//
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed retrieving from s3: %w", err)
+// 	}
+//
+// 	return output.Body, nil
+// }

@@ -1,0 +1,27 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Run Go Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'local/go.mod'
+          cache: true
+
+      - name: Run Tests
+        run: |
+          (cd shared && go test ./...)
+          (cd local && make test)
+          (cd cloud && make test)

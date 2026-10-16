@@ -1,0 +1,37 @@
+package services
+
+import (
+	"context"
+
+	"__MODULE__/shared/entities"
+	"__MODULE__/local/internal/v1/models"
+	"__MODULE__/local/internal/v1/repositories"
+	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
+)
+
+// I__Entity__Service is read-only here: __entities_human__ are written by the cloud service.
+type I__Entity__Service interface {
+	Read(c *gin.Context) (paginate.Page, []models.__Entity__Page)
+	GetByID(c context.Context, id any) (entities.__Entity__, error)
+}
+
+type __Entity__Service struct {
+	repo repositories.I__Entity__Repo
+}
+
+var _ I__Entity__Service = &__Entity__Service{}
+
+func New__Entity__Service(repo repositories.I__Entity__Repo) *__Entity__Service {
+	return &__Entity__Service{
+		repo: repo,
+	}
+}
+
+func (s *__Entity__Service) Read(c *gin.Context) (paginate.Page, []models.__Entity__Page) {
+	return s.repo.Read(c)
+}
+
+func (s *__Entity__Service) GetByID(c context.Context, id any) (entities.__Entity__, error) {
+	return s.repo.GetByID(c, id)
+}

@@ -1,0 +1,16 @@
+package routes
+
+import (
+	"__MODULE__/local/internal/v1/handlers"
+	"github.com/gin-gonic/gin"
+)
+
+func setup__Entity__Routes(v1 *gin.RouterGroup, h *handlers.__Entity__Handler) {
+	__entities__ := v1.Group("/__entities-kebab__")
+
+	__entities__.POST("/", h.Create)
+	__entities__.GET("/", h.Read)
+	__entities__.GET("/:id", h.GetByID)
+	__entities__.PUT("/:id", h.Update)
+	__entities__.DELETE("/:id", h.Delete)
+}

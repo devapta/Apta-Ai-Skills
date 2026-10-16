@@ -1,0 +1,21 @@
+package routes
+
+import (
+	"github.com/gin-gonic/gin"
+	"go.uber.org/dig"
+)
+
+// APIHandlers bundles every API (v1) handler.
+type APIHandlers struct {
+	dig.In
+
+	// scaffold:api-handlers
+}
+
+// SetupRoutes registers the local (on-site) API. Local routes are intentionally open: the service
+// runs on the site network and has no users/roles. Authentication lives on the cloud service.
+func SetupRoutes(api *gin.RouterGroup, h APIHandlers) {
+	v1 := api.Group("/v1")
+	_ = v1 // routes below are added by `scaffold.py crud`
+	// scaffold:routes
+}

@@ -1,0 +1,55 @@
+package consumers
+
+// NATS JetStream consumer (optional module, disabled by default).
+// Uncomment this file and follow the steps in the apta-go-local-cloud skill (references/optional-modules.md).
+// Rename ExampleConsumer / EXAMPLE / example to the real stream, subject and domain.
+
+// import (
+// 	"context"
+// 	"log"
+// 	"log/slog"
+//
+// 	"__MODULE__/local/internal/configs"
+// 	"github.com/nats-io/nats.go/jetstream"
+// )
+//
+// type ExampleConsumer struct {
+// 	ctx      context.Context
+// 	consumer jetstream.Consumer
+// 	log      *slog.Logger
+// }
+//
+// func NewExampleConsumer(nc *configs.NatsConnection, _log *slog.Logger) *ExampleConsumer {
+// 	ctx := context.Background()
+// 	stream, err := nc.JS.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+// 		Name:     "EXAMPLE",
+// 		Subjects: []string{"example.>"},
+// 	})
+// 	if err != nil {
+// 		log.Fatalln(err.Error())
+// 	}
+//
+// 	consumer, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
+// 		Name:    "example",
+// 		Durable: "example",
+// 	})
+// 	if err != nil {
+// 		log.Fatalln(err.Error())
+// 	}
+//
+// 	ec := &ExampleConsumer{ctx: ctx, consumer: consumer, log: _log}
+//
+// 	if _, err := consumer.Consume(ec.consume); err != nil {
+// 		log.Fatalln(err.Error())
+// 	}
+// 	log.Println("example consumer initialized")
+//
+// 	return ec
+// }
+//
+// func (c *ExampleConsumer) consume(msg jetstream.Msg) {
+// 	// parse msg.Data(), call a service, then acknowledge
+// 	if err := msg.Ack(); err != nil {
+// 		c.log.ErrorContext(c.ctx, "failed acking message", slog.String("subject", msg.Subject()), slog.Any("err", err))
+// 	}
+// }

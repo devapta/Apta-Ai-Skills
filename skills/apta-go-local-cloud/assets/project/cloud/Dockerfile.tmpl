@@ -1,0 +1,50 @@
+# Step 1: Build the application
+# We use golang:__GO_MINOR__-alpine because the project specifies Go __GO_VERSION__ in go.mod
+FROM golang:__GO_MINOR__-alpine AS builder
+
+# Install git since swag install or dependency retrieval might require it
+RUN apk add --no-cache git
+
+# Set the working directory inside the builder stage
+WORKDIR /app
+
+# Build context is the repository root. The shared module is resolved through the `replace`
+# directive in cloud/go.mod (../shared), so the workspace file is not needed here.
+ENV GOWORK=off
+COPY shared /shared
+
+# Copy dependency files first to leverage Docker layer caching
+COPY cloud/go.mod cloud/go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Install swag tool to generate swagger documentation
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Copy the rest of the source code
+COPY cloud/ .
+
+# Generate Swagger documentation before compilation.
+RUN swag init --parseDependency --parseInternal
+
+# Build the statically linked Go application
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main .
+
+# Step 2: Final production image
+FROM alpine:latest
+
+# Install ca-certificates and tzdata for SSL/TLS and timezone support
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/main .
+
+EXPOSE __CLOUD_PORT__
+
+# Configure entrypoint and default command
+# This allows running migrations easily, e.g. "docker run <image> migrate"
+ENTRYPOINT ["./main"]
+CMD ["serve"]

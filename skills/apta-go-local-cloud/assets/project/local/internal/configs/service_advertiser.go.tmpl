@@ -1,0 +1,35 @@
+package configs
+
+import (
+	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/grandcat/zeroconf"
+)
+
+func SetupServiceAdvertiser() (*zeroconf.Server, error) {
+	sPort := Env.PORT
+	port, err := strconv.Atoi(sPort)
+	if err != nil {
+		return nil, fmt.Errorf("invalid port: %w", err)
+	}
+	server, err := zeroconf.Register(
+		"__MDNS_NAME__",
+		"__MDNS_TYPE__",
+		"local.",
+		port,
+		[]string{
+			// "deviceId=" + os.Getenv("DeviceId"),
+			"env=" + Env.ServerENV,
+		},
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed advertising __APP_NAME__ service: %w", err)
+	}
+
+	log.Println("Service advertised")
+
+	return server, nil
+}

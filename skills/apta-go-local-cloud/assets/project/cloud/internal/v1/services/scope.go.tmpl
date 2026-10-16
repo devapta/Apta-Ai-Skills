@@ -1,0 +1,21 @@
+package services
+
+import (
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+// ScopedTxKey is the gin context key under which the schema middleware stores the request's
+// schema-scoped transaction (a *gorm.DB whose search_path is set to the requested schema).
+const ScopedTxKey = "tx"
+
+// scopedTx returns the schema-scoped transaction set by the schema middleware, if any.
+func scopedTx(c *gin.Context) (*gorm.DB, bool) {
+	itx, ok := c.Get(ScopedTxKey)
+	if !ok {
+		return nil, false
+	}
+
+	tx, ok := itx.(*gorm.DB)
+	return tx, ok
+}

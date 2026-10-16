@@ -1,0 +1,88 @@
+package repositories
+
+import (
+	"context"
+	"fmt"
+
+	"__MODULE__/shared/common"
+	"__MODULE__/shared/entities"
+	"__MODULE__/cloud/internal/v1/models"
+	"github.com/devfeel/mapper"
+	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
+	"gorm.io/gorm"
+)
+
+type I__Entity__Repo interface {
+	common.IBaseCrudRepo[
+		entities.__Entity__,
+		models.__Entity__Input,
+		models.__Entity__Page,
+	]
+}
+
+type __Entity__Repo struct {
+	db        *gorm.DB
+	pageQuery string
+}
+
+var _ I__Entity__Repo = &__Entity__Repo{}
+
+func New__Entity__Repo(db *gorm.DB) *__Entity__Repo {
+	return &__Entity__Repo{
+		db: db,
+		pageQuery: `
+			SELECT *
+			FROM __table__ t
+			WHERE t.deleted_at IS NULL
+		`,
+	}
+}
+
+func (r *__Entity__Repo) Create(c context.Context, input models.__Entity__Input) (uint, error) {
+	var __entity__ entities.__Entity__
+	if err := mapper.AutoMapper(&input, &__entity__); err != nil {
+		return 0, fmt.Errorf("cannot map input: %w", err)
+	}
+
+	err := gorm.G[entities.__Entity__](r.db).Create(c, &__entity__)
+
+	return __entity__.ID, err
+}
+
+func (r *__Entity__Repo) Read(c *gin.Context) (paginate.Page, []models.__Entity__Page) {
+	__entities__ := make([]models.__Entity__Page, 0)
+
+	stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+
+	pg := paginate.New()
+
+	page := pg.With(stmt).Request(c.Request).Response(&__entities__)
+
+	return page, __entities__
+}
+
+func (r *__Entity__Repo) Update(c context.Context, id any, input models.__Entity__Input) error {
+	var __entity__ entities.__Entity__
+	if err := mapper.AutoMapper(&input, &__entity__); err != nil {
+		return fmt.Errorf("cannot map input: %w", err)
+	}
+
+	_, err := gorm.G[entities.__Entity__](r.db).Where("id = ?", id).Updates(c, __entity__)
+
+	return err
+}
+
+func (r *__Entity__Repo) Delete(c context.Context, id any) error {
+	_, err := gorm.G[entities.__Entity__](r.db).Where("id = ?", id).Delete(c)
+
+	return err
+}
+
+func (r *__Entity__Repo) GetByID(c context.Context, id any) (entities.__Entity__, error) {
+	var __entity__ entities.__Entity__
+
+	__entity__, err := gorm.G[entities.__Entity__](r.db).Where("id = ?", id).First(c)
+
+	return __entity__, err
+}

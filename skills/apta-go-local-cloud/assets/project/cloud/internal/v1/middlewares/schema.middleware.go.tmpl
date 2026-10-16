@@ -1,0 +1,67 @@
+package middlewares
+
+import (
+	"fmt"
+	"net/http"
+	"slices"
+	"strings"
+
+	"__MODULE__/cloud/internal/configs"
+	"__MODULE__/cloud/internal/v1/services"
+	"__MODULE__/shared/common"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+type SchemaMiddleware struct {
+	db            *gorm.DB
+	schemaService *services.SchemaService
+}
+
+func NewSchemaMiddleware(db *gorm.DB, schemaService *services.SchemaService) *SchemaMiddleware {
+	return &SchemaMiddleware{
+		db:            db,
+		schemaService: schemaService,
+	}
+}
+
+// SchemaRouter scopes a read request to one schema. With no `scope` query parameter it uses the
+// main schema (DB_SCHEMA); otherwise `scope` must be one of the site schemas, anything else is a 400.
+// The scoped transaction is stored under services.ScopedTxKey for the services' UseScoped.
+func (m *SchemaMiddleware) SchemaRouter(c *gin.Context) {
+	schema := configs.Env.DBSchema
+
+	if scope := c.Query("scope"); scope != "" && scope != schema {
+		sites, err := m.schemaService.GetSites(c.Request.Context())
+		if err != nil {
+			c.JSON(common.ResultErr(err, "failed to retrieve sites"))
+			c.Abort()
+			return
+		}
+
+		// the allow-list is what makes interpolating the schema name below safe
+		if !slices.Contains(sites, scope) {
+			_, res := common.ResultErr(fmt.Errorf("unknown scope %q", scope), "")
+			c.JSON(http.StatusBadRequest, res)
+			c.Abort()
+			return
+		}
+
+		schema = scope
+	}
+
+	tx := m.db.WithContext(c.Request.Context()).Begin()
+	defer tx.Rollback()
+
+	quoted := `"` + strings.ReplaceAll(schema, `"`, `""`) + `"`
+	if err := tx.Exec("SET LOCAL search_path TO " + quoted).Error; err != nil {
+		c.JSON(common.ResultErr(err, "failed to scope request"))
+		c.Abort()
+		return
+	}
+
+	c.Set(services.ScopedTxKey, tx)
+	c.Set("currentScope", schema)
+
+	c.Next()
+}

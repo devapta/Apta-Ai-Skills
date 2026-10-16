@@ -1,0 +1,16 @@
+package main
+
+import (
+	"__MODULE__/cloud/cmd"
+	_ "__MODULE__/cloud/docs"
+)
+
+// @title __APP_TITLE__ API (Cloud)
+// @version 0.0.1
+// @BasePath /api
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+func main() {
+	cmd.Execute()
+}

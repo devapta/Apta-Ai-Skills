@@ -1,0 +1,96 @@
+name: Build and Deploy to Dev
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+    
+jobs:
+  build:
+    name: Build and Push ${{ matrix.name }} Image
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Local
+            file: ./local/Dockerfile
+            tag: registry.apta.works/__APP_NAME__-local:latest
+            cache-scope: local
+          - name: Cloud
+            file: ./cloud/Dockerfile
+            tag: registry.apta.works/__APP_NAME__-cloud:latest
+            cache-scope: cloud
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to private Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.apta.works
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and Push ${{ matrix.name }} Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: ${{ matrix.tag }}
+          cache-from: type=gha,scope=${{ matrix.cache-scope }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.cache-scope }}
+
+  deploy:
+    name: Deploy on Dev Server
+    needs: build
+    runs-on: [self-hosted, dev]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to private Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.apta.works
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Write .env from Infisical
+        uses: Infisical/secrets-action@v1.0.12
+        with:
+          method: "universal"
+          domain: "https://infisical.apta.works"   # self-hosted instance URL
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: "__APP_NAME__"
+          env-slug: "dev"
+          export-type: "file"
+          file-output-path: "/.env"
+
+      - name: Write .env.cloud from Infisical
+        uses: Infisical/secrets-action@v1.0.12
+        with:
+          method: "universal"
+          domain: "https://infisical.apta.works"   # self-hosted instance URL
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: "__APP_NAME__"
+          env-slug: "dev-cloud"
+          export-type: "file"
+          file-output-path: "/.env.cloud"
+
+      - name: Pull Latest Image and Restart Stack
+        run: |
+          docker compose -f docker-compose.dev.yml pull
+          docker compose -f docker-compose.dev.yml down
+          docker compose -f docker-compose.dev.yml up -d
+

@@ -1,0 +1,31 @@
+# AGENTS.md
+
+Guidance for agent sessions working in this repository.
+
+## Hard rules
+
+- Do not execute run, serve, migrate, or build commands. The user runs commands.
+- Retain the existing versioned layered structure.
+- Verify dependency APIs through Context7 before writing dependency-specific code.
+- Do not edit generated Swagger files under `local/docs/` or `cloud/docs/`.
+- `shared/` never imports `local/` or `cloud/`.
+
+## Scope
+
+A Go workspace of three modules: `shared/` (entities, enums, common helpers, pkg), `local/` (on-site
+service, no auth) and `cloud/` (head-office service with JWT auth, users, roles and schema-scoped reads).
+Shared infrastructure on both services: PostgreSQL, OpenTelemetry, slog, Swagger, cobra, and uber/dig.
+S3, Infisical and NATS are present in the codebase but commented out until needed.
+
+Every table has one authority side (see README, "How data moves between local and cloud"). Write
+endpoints exist only on the authority side; the other side is read-only. Decide the authority before
+adding a table.
+
+New backend code follows the existing entity, model, repository, service, handler, and route layers.
+Entities live in `shared/entities`; the other layers are duplicated per service under
+`<local|cloud>/internal/v1`. Register constructable dependencies in `<service>/internal/container/di.go`
+and entities in `<service>/internal/configs/postgres.go`. To add a resource, use the
+`apta-go-local-cloud` skill (CRUD scaffolding) instead of hand-copying files.
+
+All database access belongs in repositories. Pass `c.Request.Context()` from Gin handlers to methods
+accepting `context.Context`; pass `*gin.Context` only where the method explicitly requires it.

@@ -11,6 +11,7 @@ project gets the same skills. Linux-only team — bash + coreutils, nothing else
 | --- | --- |
 | [`apta-superskill`](skills/apta-superskill/) | React + TypeScript + Vite + Tailwind/shadcn frontend standard: architecture, component patterns, API layer, styling. |
 | [`apta-go-backend`](skills/apta-go-backend/) | Go + Gin backend generator modeled on fleet-backend: scaffold a new project (GORM/Postgres, JWT, users/roles/user-roles, slog, Swagger, cobra, dig, OpenTelemetry), add CRUD endpoints, enable optional S3/Infisical/NATS. |
+| [`apta-go-local-cloud`](skills/apta-go-local-cloud/) | Go + Gin workspace with `shared`, `local` (on-site, open API) and `cloud` (JWT, schema-scoped reads) modules, modeled on simple-weighbridge-service: scaffold it, add CRUD resources with a data-authority side, enable optional S3/Infisical/NATS. |
 
 Run `./install.sh --list` for the live list and which agents each skill supports.
 

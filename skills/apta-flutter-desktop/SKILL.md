@@ -16,6 +16,7 @@ Opinionated layout for Flutter Desktop apps that talk to a REST backend, optiona
 5. **Models use `json_serializable`**, and the `.g.dart` files are committed. Run `dart run build_runner build --delete-conflicting-outputs`.
 6. **No hardcoded UI strings.** All text goes through l10n (`app_en.arb` plus one arb per extra locale).
 7. **Flutter version is pinned with FVM** (`.fvmrc` with an exact version, e.g. `3.47.0`). Every command uses `fvm flutter ...`.
+8. **Tests use `checks` and hand-written fakes.** No mockito/mocktail. Widget tests assert on finders with `check(finder.evaluate().length).equals(n)`. See `references/architecture.md`.
 
 ## Creating a new project
 
@@ -158,6 +159,22 @@ Code templates are in `references/architecture.md`.
 
 - Token injection and 401 handling belong in a Dio interceptor, but the interceptor must not depend on UI (`Navigator`, `BuildContext`, `Provider`). Give it a small token-store and a callback (e.g. `onUnauthorized`) that the app wires up at startup.
 - Apps without login (e.g. kiosks, apps behind a trusted local service) need no interceptor beyond logging.
+
+## When official Flutter/Dart skills are also installed
+
+Projects often also install the official skills (`flutter/agent-plugins`, `dart-lang/skills`). They are generic, and some defaults differ from this standard. Where they differ, **this skill wins**:
+
+| Topic | Official skills say | This standard |
+| --- | --- | --- |
+| HTTP | `http` package, throw on error | Dio; repositories return `ApiResponse<T>` and never throw to the UI |
+| JSON | manual `jsonDecode` with `http` | `json_serializable` models (`references/architecture.md`) |
+| Architecture | MVVM with a separate Service layer; repositories cache | `Screen -> Provider -> Repository -> ApiService`; no cache unless the project asks for one |
+| Routing | `go_router` with deep links | plain `Navigator` unless the app needs URLs |
+| Tests | `expect()`; mockito + `build_runner` mocks | `checks`; hand-written fakes |
+| Localization | `synthetic-package: true`, `flutter_gen` import | `output-dir: lib/l10n/generated` (see "Creating a new project") |
+| Layout | adaptive layouts, never lock orientation | follow the design; a fixed-orientation kiosk is a valid requirement |
+
+Official procedures that do not conflict are fine to use: widget previews, fixing layout overflows, static analysis, and the step-by-step flow of widget and integration tests (with `check(...)` assertions). Safest: do not install the skills whose defaults you cannot follow (`flutter-use-http-package`, `flutter-implement-json-serialization`, `flutter-apply-architecture-best-practices`, `flutter-setup-declarative-routing`, `flutter-setup-localization`, `dart-add-unit-test`, `dart-generate-test-mocks`).
 
 ## Build and release
 

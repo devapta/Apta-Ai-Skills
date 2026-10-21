@@ -46,12 +46,13 @@ inside the target project (no clone needed — needs Node 18+ and git access to 
 private repo):
 
 ```bash
-npx github:devapta/Apta-Ai-Skills
+npx --allow-git=root github:devapta/Apta-Ai-Skills
 ```
 
 Every `install.sh` flag below works the same way after the repo name, e.g.
-`npx github:devapta/Apta-Ai-Skills --agent claude-code --skill apta-superskill`.
-Pin a branch, tag or commit with `#ref` (`npx github:devapta/Apta-Ai-Skills#main`).
+`npx --allow-git=root github:devapta/Apta-Ai-Skills --agent claude-code --skill apta-superskill`.
+`--allow-git=root` is required on npm 12+, which refuses git-hosted packages by
+default (older npm only warns about the unknown flag). Pin a branch, tag or commit with `#ref` (`npx --allow-git=root github:devapta/Apta-Ai-Skills#main`).
 
 Without Node (needs `gh` authenticated, repo is private):
 

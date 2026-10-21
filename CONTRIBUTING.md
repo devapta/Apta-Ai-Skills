@@ -55,7 +55,7 @@ under the size cap.
 
 ## The npx package
 
-`npx github:devapta/Apta-Ai-Skills` installs this repo as an npm package and runs
+`npx --allow-git=root github:devapta/Apta-Ai-Skills` installs this repo as an npm package and runs
 `bin/apta-skills.js`, a thin wrapper around `install.sh`. Only paths listed in
 `package.json` `"files"` ship (`bin/`, `install.sh`, `skills/`); anything under
 `skills/` is included automatically. `scripts/selftest.sh` asserts the package

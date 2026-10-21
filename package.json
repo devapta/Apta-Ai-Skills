@@ -1,0 +1,22 @@
+{
+  "name": "apta-skills",
+  "version": "1.0.0",
+  "description": "Install Apta's team Agent Skills into a project (Claude Code, Codex, OpenCode, Antigravity).",
+  "private": true,
+  "license": "MIT",
+  "repository": "github:devapta/Apta-Ai-Skills",
+  "bin": {
+    "apta-skills": "bin/apta-skills.js"
+  },
+  "files": [
+    "bin/",
+    "install.sh",
+    "skills/"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "linux"
+  ]
+}

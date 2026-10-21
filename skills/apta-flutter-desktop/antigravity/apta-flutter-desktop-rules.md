@@ -22,4 +22,4 @@ Applies to Apta Flutter Desktop apps (Linux & Windows). The `apta-flutter-deskto
 - mDNS: Windows needs `reusePort: false` and a non-loopback IPv4 `interfacesFactory`. Resolve stored URL -> mDNS -> fallback, retry in the background.
 
 ## Tests and build
-`flutter_test` + the `checks` package; test providers with a fake repository through the constructor. `fvm flutter analyze` and `test` must be clean. Windows: `build.ps1` + Inno Setup. Linux: Docker Ubuntu 22.04, Flutter version read from `.fvmrc`. Never ship a build with fake hardware.
+`flutter_test` + the `checks` package (`check(finder.evaluate().length).equals(n)` for widgets); hand-written fakes through the constructor, no mockito/mocktail. If official Flutter/Dart skills disagree (`http`, `expect`, mocks, `synthetic-package`, `go_router`, MVVM service layer), follow these rules. `fvm flutter analyze` and `test` must be clean. Windows: `build.ps1` + Inno Setup. Linux: Docker Ubuntu 22.04, Flutter version read from `.fvmrc`. Never ship a build with fake hardware.

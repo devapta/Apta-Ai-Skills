@@ -279,7 +279,7 @@ High-frequency sources (serial data, sensors) should batch notifications, e.g. a
 
 ## 5. Tests
 
-Use `flutter_test` + the `checks` package (not `expect`). Test providers with a fake repository injected through the constructor:
+Use `flutter_test` + the `checks` package: assert with `check(...)`, not `expect`. Do not add mockito or mocktail; test providers with a hand-written fake repository injected through the constructor:
 
 ```dart
 class FakeFooRepository implements FooRepository { /* return ApiResponse.success(...) */ }
@@ -293,6 +293,17 @@ test('fetchItems populates items', () async {
 ```
 
 For providers that use `SharedPreferences`, call `SharedPreferences.setMockInitialValues({})` in `setUp`.
+
+Widget tests: `checks` has no `findsOneWidget`-style matchers, so assert on the finder's result:
+
+```dart
+testWidgets('shows the title', (tester) async {
+  await tester.pumpWidget(const MaterialApp(home: FooScreen()));
+  check(find.text('Foo').evaluate().length).equals(1);
+});
+```
+
+The official `flutter-add-widget-test` and `flutter-add-integration-test` skills show `expect(find.text('Foo'), findsOneWidget)`. Follow their steps (`pumpWidget`, tap, `pump`), but write the assertions with `check(...)`. Leave existing `expect` lines alone; new tests use `check`.
 
 ## 6. Local storage
 

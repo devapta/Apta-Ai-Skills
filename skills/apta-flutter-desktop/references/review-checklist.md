@@ -28,16 +28,17 @@ For the reviewer. Go top to bottom. A PR should pass every relevant section. If 
 16. No hardcoded UI text. Strings are in the arb files.
 17. No comments that explain what the code already says. No dead code or leftover debug `print`.
 18. Loading, empty, and error states are all handled on the screen (per the design).
+19. Tests assert with `check(...)` and use hand-written fakes; no `mockito`/`mocktail` dependency.
 
 ## D. Hardware and networking
 
-19. Values that must come from a device are read-only in the UI, and submit is blocked until the device reports a valid (e.g. stable) reading.
-20. When the server is unreachable, the app shows a clear error and blocks the action; no silent failure or hang.
-21. A submit that times out does not create a duplicate record. Check the record's state before resending.
-22. The serial Isolate worker and native cleanup (`SerialPortConfig.dispose()`, closing the port) are not changed without strong reason.
-23. For NFC, the order of direct `connect` first, then `waitForCard` fallback, is kept.
-24. `.env` has no new keys without agreement. Fake hardware is selected with `--dart-define`, never `.env`.
-25. A PR that touches hardware includes manual test notes: device not recognized, device removed mid-operation, cable unplugged, server down during submit.
+20. Values that must come from a device are read-only in the UI, and submit is blocked until the device reports a valid (e.g. stable) reading.
+21. When the server is unreachable, the app shows a clear error and blocks the action; no silent failure or hang.
+22. A submit that times out does not create a duplicate record. Check the record's state before resending.
+23. The serial Isolate worker and native cleanup (`SerialPortConfig.dispose()`, closing the port) are not changed without strong reason.
+24. For NFC, the order of direct `connect` first, then `waitForCard` fallback, is kept.
+25. `.env` has no new keys without agreement. Fake hardware is selected with `--dart-define`, never `.env`.
+26. A PR that touches hardware includes manual test notes: device not recognized, device removed mid-operation, cable unplugged, server down during submit.
 
 ## E. Project-specific rules
 

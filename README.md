@@ -44,7 +44,19 @@ your user). Then **commit the created directories**. Remove skills with
 
 The repo's own installer is still available. It always copies (never symlinks), and
 it is the only route that installs the Antigravity rules (`.agents/rules/`). From
-inside the target project (no clone needed — needs `gh` authenticated, repo is private):
+inside the target project (no clone needed — needs Node 18+ and git access to the
+private repo):
+
+```bash
+npx --allow-git=root github:devapta/Apta-Ai-Skills
+```
+
+Every `install.sh` flag below works the same way after the repo name, e.g.
+`npx --allow-git=root github:devapta/Apta-Ai-Skills --agent claude-code --skill apta-superskill`.
+`--allow-git=root` is required on npm 12+, which refuses git-hosted packages by
+default (older npm only warns about the unknown flag). Pin a branch, tag or commit with `#ref` (`npx --allow-git=root github:devapta/Apta-Ai-Skills#main`).
+
+Without Node (needs `gh` authenticated, repo is private):
 
 ```bash
 gh api repos/devapta/Apta-Ai-Skills/contents/install.sh --jq .content \

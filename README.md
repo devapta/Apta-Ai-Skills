@@ -13,6 +13,7 @@ project gets the same skills. Linux-only team — bash + coreutils, nothing else
 | [`apta-go-backend`](skills/apta-go-backend/) | Go + Gin backend generator modeled on fleet-backend: scaffold a new project (GORM/Postgres, JWT, users/roles/user-roles, slog, Swagger, cobra, dig, OpenTelemetry), add CRUD endpoints, enable optional S3/Infisical/NATS. |
 | [`apta-go-local-cloud`](skills/apta-go-local-cloud/) | Go + Gin workspace with `shared`, `local` (on-site, open API) and `cloud` (JWT, schema-scoped reads) modules, modeled on simple-weighbridge-service: scaffold it, add CRUD resources with a data-authority side, enable optional S3/Infisical/NATS. |
 | [`apta-flutter-desktop`](skills/apta-flutter-desktop/) | Flutter Desktop (Linux & Windows) app standard: Screen → Provider → Repository → ApiService layering (Dio, get_it, Provider, forui), hardware behind fake/real interfaces (serial, NFC, OCR), mDNS server discovery, Windows/Linux release builds, PR review checklist. |
+| [`apta-frontend-deployment-setup`](skills/apta-frontend-deployment-setup/) | Vite/React frontend deploy setup: multi-stage Dockerfile + nginx SPA image, docker compose, GitHub Actions to `registry.apta.works` and self-hosted runners (dev on push to `dev`, prod on `v*.*.*` tags), build-time `VITE_*` from Infisical, repo secrets filled from Infisical via `gh`. |
 
 Run `./install.sh --list` for the live list and which agents each skill supports.
 

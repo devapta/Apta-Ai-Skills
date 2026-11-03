@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+# Linux release build in a pinned Ubuntu 22.04 image. Build it with build-ubuntu.sh, which supplies the build args.
+
+FROM ubuntu:22.04 AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG FLUTTER_VERSION
+ARG APP_NAME
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl git unzip xz-utils zip \
+    clang cmake ninja-build pkg-config \
+    libgtk-3-dev libstdc++-12-dev libudev-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Keep the SDK version equal to .fvmrc (build-ubuntu.sh passes it in).
+RUN git clone --depth 1 --branch "${FLUTTER_VERSION}" https://github.com/flutter/flutter.git /opt/flutter
+ENV PATH="/opt/flutter/bin:${PATH}"
+ENV CC=clang
+ENV CXX=clang++
+# Generic x86-64 code so the bundle also runs on older CPUs.
+ENV CFLAGS="-march=x86-64 -mtune=generic"
+ENV CXXFLAGS="-march=x86-64 -mtune=generic"
+
+RUN flutter config --no-analytics --enable-linux-desktop && flutter precache --linux
+
+WORKDIR /app
+COPY . .
+RUN flutter pub get && flutter build linux --release
+
+# Tar keeps executable permissions intact during transfer.
+RUN mkdir -p /out && tar -C /app/build/linux/x64/release -czf "/out/${APP_NAME}-linux-x64.tar.gz" bundle
+
+# Export only the archive, not the Ubuntu/Flutter environment.
+FROM scratch AS export
+COPY --from=builder /out/ /

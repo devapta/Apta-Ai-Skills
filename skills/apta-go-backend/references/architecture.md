@@ -54,6 +54,20 @@ and keep the `var _ I<Name>Repo = &<Name>Repo{}` assertion.
   `*` (`PermFullAccess`) grants everything.
 - Tables: GORM default (snake plural). The `pageQuery` table name must match.
 
+## Read caching
+
+Every repository caches its list endpoint (`Read`) in a per-repository `ttlcache` (`github.com/jellydator/ttlcache/v3`):
+
+- Entry key is the request's raw query string (`page`, `size`, `sort`, `filters`), value is `cachedRead[T]`
+  (`read-cache.go`: both the `paginate.Page` and the items, so hits return exactly what a miss would).
+- TTL is `readCacheTTL` (5 minutes) in `repositories/read-cache.go`; `go readCache.Start()` runs the expiry loop.
+- `Create`, `Update`, `Delete` (and any other writing method, e.g. `BulkCreate`) call `ClearCaches()` after a successful
+  write. `ClearCaches()` is on every `I<Name>Repo`.
+- `GetByID` and custom lookups are not cached.
+- One cache per repository *instance*. Construct repositories once through DI. `IUserRoleRepo.WithTx(tx)` returns a
+  transaction-bound copy that shares the singleton's cache — use it inside transactions instead of `NewUserRoleRepo(tx)`
+  (which would start a second cache and goroutine and leave the singleton stale), and call `ClearCaches()` after commit.
+
 ## Auth
 
 `POST /users/login` returns access + refresh tokens (HS256, `JWT_SECRET`; access lifetime

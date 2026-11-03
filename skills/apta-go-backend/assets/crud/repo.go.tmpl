@@ -9,11 +9,13 @@ import (
 	"__MODULE__/internal/v1/models"
 	"github.com/devfeel/mapper"
 	"github.com/gin-gonic/gin"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
 type I__Entity__Repo interface {
+	ClearCaches()
 	common.IBaseCrudRepo[
 		entities.__Entity__,
 		models.__Entity__Input,
@@ -24,13 +26,20 @@ type I__Entity__Repo interface {
 type __Entity__Repo struct {
 	db        *gorm.DB
 	pageQuery string
+	readCache *ttlcache.Cache[string, cachedRead[models.__Entity__Page]]
 }
 
 var _ I__Entity__Repo = &__Entity__Repo{}
 
 func New__Entity__Repo(db *gorm.DB) *__Entity__Repo {
+	readCache := ttlcache.New(
+		ttlcache.WithTTL[string, cachedRead[models.__Entity__Page]](readCacheTTL),
+	)
+	go readCache.Start()
+
 	return &__Entity__Repo{
-		db: db,
+		readCache: readCache,
+		db:        db,
 		pageQuery: `
 			SELECT *
 			FROM __table__ t
@@ -47,19 +56,26 @@ func (r *__Entity__Repo) Create(c context.Context, input models.__Entity__Input)
 
 	err := gorm.G[entities.__Entity__](r.db).Create(c, &__entity__)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return __entity__.ID, err
 }
 
 func (r *__Entity__Repo) Read(c *gin.Context) (paginate.Page, []models.__Entity__Page) {
-	__entities__ := make([]models.__Entity__Page, 0)
+	cacheKey := c.Request.URL.RawQuery
+	entry, _ := r.readCache.GetOrSetFunc(cacheKey, func() cachedRead[models.__Entity__Page] {
+		__entities__ := make([]models.__Entity__Page, 0)
+		stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		pg := paginate.New()
+		page := pg.With(stmt).Request(c.Request).Response(&__entities__)
 
-	stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		return cachedRead[models.__Entity__Page]{page: page, items: __entities__}
+	})
 
-	pg := paginate.New()
-
-	page := pg.With(stmt).Request(c.Request).Response(&__entities__)
-
-	return page, __entities__
+	result := entry.Value()
+	return result.page, result.items
 }
 
 func (r *__Entity__Repo) Update(c context.Context, id any, input models.__Entity__Input) error {
@@ -70,11 +86,19 @@ func (r *__Entity__Repo) Update(c context.Context, id any, input models.__Entity
 
 	_, err := gorm.G[entities.__Entity__](r.db).Where("id = ?", id).Updates(c, __entity__)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return err
 }
 
 func (r *__Entity__Repo) Delete(c context.Context, id any) error {
 	_, err := gorm.G[entities.__Entity__](r.db).Where("id = ?", id).Delete(c)
+
+	if err == nil {
+		r.ClearCaches()
+	}
 
 	return err
 }
@@ -85,4 +109,8 @@ func (r *__Entity__Repo) GetByID(c context.Context, id any) (entities.__Entity__
 	__entity__, err := gorm.G[entities.__Entity__](r.db).Where("id = ?", id).First(c)
 
 	return __entity__, err
+}
+
+func (r *__Entity__Repo) ClearCaches() {
+	r.readCache.DeleteAll()
 }

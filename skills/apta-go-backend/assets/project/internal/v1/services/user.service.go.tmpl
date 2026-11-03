@@ -26,19 +26,19 @@ type IUserService interface {
 }
 
 type UserService struct {
-	repo repositories.IUserRepo
-	// urRepo repositories.IUserRoleRepo
+	repo   repositories.IUserRepo
+	urRepo repositories.IUserRoleRepo
 }
 
 var _ IUserService = &UserService{}
 
 func NewUserService(
 	repo repositories.IUserRepo,
-	// urRepo repositories.IUserRoleRepo,
+	urRepo repositories.IUserRoleRepo,
 ) *UserService {
 	return &UserService{
-		repo: repo,
-		// urRepo: urRepo,
+		repo:   repo,
+		urRepo: urRepo,
 	}
 }
 
@@ -165,7 +165,8 @@ func (s *UserService) AssignRoles(c context.Context, userID uint, newRoleIDs []u
 	tx := configs.DB.Begin()
 	defer tx.Rollback()
 
-	urRepo := repositories.NewUserRoleRepo(tx)
+	// bound to the transaction but sharing the singleton's read cache (a new repository would get its own)
+	urRepo := s.urRepo.WithTx(tx)
 
 	oldRoles, err := urRepo.GetRoleIDsByUserID(c, userID)
 	if err != nil {
@@ -193,5 +194,12 @@ func (s *UserService) AssignRoles(c context.Context, userID uint, newRoleIDs []u
 		}
 	}
 
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	// clear after commit so a concurrent read cannot re-cache the pre-commit rows
+	s.urRepo.ClearCaches()
+
+	return nil
 }

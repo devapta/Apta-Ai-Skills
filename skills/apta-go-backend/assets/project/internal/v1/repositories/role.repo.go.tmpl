@@ -9,24 +9,33 @@ import (
 	"__MODULE__/internal/v1/models"
 	"github.com/devfeel/mapper"
 	"github.com/gin-gonic/gin"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
 type IRoleRepo interface {
+	ClearCaches()
 	common.IBaseCrudRepo[entities.Role, models.RoleInput, models.RolePage]
 }
 
 type RoleRepo struct {
 	db        *gorm.DB
 	pageQuery string
+	readCache *ttlcache.Cache[string, cachedRead[models.RolePage]]
 }
 
 var _ IRoleRepo = &RoleRepo{}
 
 func NewRoleRepo(db *gorm.DB) *RoleRepo {
+	readCache := ttlcache.New(
+		ttlcache.WithTTL[string, cachedRead[models.RolePage]](readCacheTTL),
+	)
+	go readCache.Start()
+
 	return &RoleRepo{
-		db: db,
+		readCache: readCache,
+		db:        db,
 		pageQuery: `
 			SELECT 
 				*
@@ -44,19 +53,26 @@ func (r *RoleRepo) Create(c context.Context, input models.RoleInput) (uint, erro
 
 	err := gorm.G[entities.Role](r.db).Create(c, &role)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return role.ID, err
 }
 
 func (r *RoleRepo) Read(c *gin.Context) (paginate.Page, []models.RolePage) {
-	roles := make([]models.RolePage, 0)
+	cacheKey := c.Request.URL.RawQuery
+	entry, _ := r.readCache.GetOrSetFunc(cacheKey, func() cachedRead[models.RolePage] {
+		roles := make([]models.RolePage, 0)
+		stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		pg := paginate.New()
+		page := pg.With(stmt).Request(c.Request).Response(&roles)
 
-	stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		return cachedRead[models.RolePage]{page: page, items: roles}
+	})
 
-	pg := paginate.New()
-
-	page := pg.With(stmt).Request(c.Request).Response(&roles)
-
-	return page, roles
+	result := entry.Value()
+	return result.page, result.items
 }
 
 func (r *RoleRepo) Update(c context.Context, id any, input models.RoleInput) error {
@@ -67,11 +83,19 @@ func (r *RoleRepo) Update(c context.Context, id any, input models.RoleInput) err
 
 	_, err := gorm.G[entities.Role](r.db).Where("id = ?", id).Updates(c, role)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return err
 }
 
 func (r *RoleRepo) Delete(c context.Context, id any) error {
 	_, err := gorm.G[entities.Role](r.db).Where("id = ?", id).Delete(c)
+
+	if err == nil {
+		r.ClearCaches()
+	}
 
 	return err
 }
@@ -82,4 +106,8 @@ func (r *RoleRepo) GetByID(c context.Context, id any) (entities.Role, error) {
 	role, err := gorm.G[entities.Role](r.db).Where("id = ?", id).First(c)
 
 	return role, err
+}
+
+func (r *RoleRepo) ClearCaches() {
+	r.readCache.DeleteAll()
 }

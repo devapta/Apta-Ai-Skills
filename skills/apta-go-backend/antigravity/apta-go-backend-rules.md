@@ -14,6 +14,9 @@ Applies to Go backends modeled on fleet-backend. The `apta-go-backend` skill has
 ## Naming
 Files `<snake_name>.<layer>.go`; routes `/api/v1/<kebab-plural>`; json tags camelCase; env vars UPPER_SNAKE in `internal/configs/env.go` and `example.env`.
 
+## Read caching
+Each repository caches `Read` in a `ttlcache` (5 min TTL, key = raw query string, `cachedRead[T]` in `repositories/read-cache.go`). Every repo interface has `ClearCaches()`; call it after any successful write (Create/Update/Delete/bulk). Build repositories once via DI; inside a transaction use `WithTx(tx)` (shares the cache) and clear after commit. GetByID is not cached.
+
 ## Behaviour
 - Handlers pass `c.Request.Context()`; respond with `common.ResultOk` / `common.ResultErr` (400 on bad JSON).
 - Log with `slog` `*Context` methods; OpenTelemetry is on by default.

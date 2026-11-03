@@ -18,7 +18,8 @@ The script needs `python3` (stdlib only). Locate it relative to this skill, e.g.
 
 - Enabled: Gin, GORM + Postgres, JWT (access + refresh), users / roles / user-roles, slog
   (stdout + OTel, GORM queries logged through slog), Swagger (swaggo), cobra (`serve`, `migrate`),
-  uber/dig DI, OpenTelemetry (traces, logs, metrics), pagination, Dockerfile, compose, CI workflows.
+  uber/dig DI, OpenTelemetry (traces, logs, metrics), pagination, TTL read caching on every repository
+  (`ttlcache`, 5 min, cleared on writes), Dockerfile, compose, CI workflows.
 - Present but commented out (zero cost until enabled): **S3**, **Infisical**, **NATS**. Use
   `enable` below — never uncomment by hand.
 
@@ -59,6 +60,8 @@ python3 <skill-dir>/scripts/scaffold.py crud --name VehicleType \
 - It creates entity, model, repository, service, handler and route files, and wires them into
   `internal/container/di.go`, `internal/v1/routes/router.go`, `internal/configs/postgres.go`
   (migrate + drop) and `internal/enums/permissions.go` (`<plural>#create|read|update|delete`).
+  `--cache-endpoint` also adds `DELETE /<plural>/caches` (needs `<plural>#update`) to flush that resource's read cache.
+  Repositories come with the read cache already (see `references/architecture.md`, "Read caching").
   It refuses to overwrite existing files.
 
 Then finish what a generator cannot know — read `references/crud-endpoint.md` for how: joins in the
@@ -89,6 +92,7 @@ Read `references/architecture.md` before changing structure. The short version:
 - All DB access lives in repositories. Handlers pass `c.Request.Context()` onward.
 - Responses use `common.Result[T]` (`ResultOk` / `ResultErr`); lists return `paginate.Page`.
 - Every handler carries swaggo annotations; never edit generated files under `docs/`.
+- Any repository method that writes must call `r.ClearCaches()` on success, or lists stay stale for the TTL.
 - Look up dependency APIs with Context7 before writing library-specific code.
 
 ## Retained from fleet-backend as-is

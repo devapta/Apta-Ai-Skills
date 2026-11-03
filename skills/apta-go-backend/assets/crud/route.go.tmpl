@@ -13,6 +13,6 @@ func setup__Entity__Routes(v1 *gin.RouterGroup, authM *middlewares.AuthMiddlewar
 	__entities__.POST("/", authM.Authz(enums.Perm__Entities__Create), h.Create)
 	__entities__.GET("/", authM.Authz(enums.Perm__Entities__Read), h.Read)
 	__entities__.GET("/:id", authM.Authz(enums.Perm__Entities__Read), h.GetByID)
-	__entities__.PUT("/:id", authM.Authz(enums.Perm__Entities__Update), h.Update)
+	__entities__.PUT("/:id", authM.Authz(enums.Perm__Entities__Update), h.Update)__ROUTE_CLEAR__
 	__entities__.DELETE("/:id", authM.Authz(enums.Perm__Entities__Delete), h.Delete)
 }

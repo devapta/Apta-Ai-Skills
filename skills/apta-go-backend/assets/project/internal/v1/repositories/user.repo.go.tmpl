@@ -10,11 +10,13 @@ import (
 	"__MODULE__/internal/v1/models"
 	"github.com/devfeel/mapper"
 	"github.com/gin-gonic/gin"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
 type IUserRepo interface {
+	ClearCaches()
 	common.IBaseCrudRepo[entities.User, models.UserInput, models.UserPage]
 	GetByUsernameOrEmail(c context.Context, usernameOrEmail string) (entities.User, error)
 	GetPermissions(c context.Context, id any) ([]string, error)
@@ -25,13 +27,20 @@ type IUserRepo interface {
 type UserRepo struct {
 	db        *gorm.DB
 	pageQuery string
+	readCache *ttlcache.Cache[string, cachedRead[models.UserPage]]
 }
 
 var _ IUserRepo = &UserRepo{}
 
 func NewUserRepo(db *gorm.DB) *UserRepo {
+	readCache := ttlcache.New(
+		ttlcache.WithTTL[string, cachedRead[models.UserPage]](readCacheTTL),
+	)
+	go readCache.Start()
+
 	return &UserRepo{
-		db: db,
+		readCache: readCache,
+		db:        db,
 		pageQuery: `
 			SELECT 
 				*
@@ -64,19 +73,26 @@ func (r *UserRepo) Create(c context.Context, input models.UserInput) (uint, erro
 
 	err := gorm.G[entities.User](r.db).Create(c, &user)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return user.ID, err
 }
 
 func (r *UserRepo) Read(c *gin.Context) (paginate.Page, []models.UserPage) {
-	users := make([]models.UserPage, 0)
+	cacheKey := c.Request.URL.RawQuery
+	entry, _ := r.readCache.GetOrSetFunc(cacheKey, func() cachedRead[models.UserPage] {
+		users := make([]models.UserPage, 0)
+		stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		pg := paginate.New()
+		page := pg.With(stmt).Request(c.Request).Response(&users)
 
-	stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		return cachedRead[models.UserPage]{page: page, items: users}
+	})
 
-	pg := paginate.New()
-
-	page := pg.With(stmt).Request(c.Request).Response(&users)
-
-	return page, users
+	result := entry.Value()
+	return result.page, result.items
 }
 
 func (r *UserRepo) Update(c context.Context, id any, input models.UserInput) error {
@@ -87,11 +103,19 @@ func (r *UserRepo) Update(c context.Context, id any, input models.UserInput) err
 
 	_, err := gorm.G[entities.User](r.db).Where("id = ?", id).Updates(c, user)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return err
 }
 
 func (r *UserRepo) Delete(c context.Context, id any) error {
 	_, err := gorm.G[entities.User](r.db).Where("id = ?", id).Delete(c)
+
+	if err == nil {
+		r.ClearCaches()
+	}
 
 	return err
 }
@@ -172,4 +196,8 @@ func (r *UserRepo) GetRoles(c context.Context, id any) ([]models.UserRole, error
 	err := r.db.WithContext(c).Raw(query, id).Scan(&roles).Error
 
 	return roles, err
+}
+
+func (r *UserRepo) ClearCaches() {
+	r.readCache.DeleteAll()
 }

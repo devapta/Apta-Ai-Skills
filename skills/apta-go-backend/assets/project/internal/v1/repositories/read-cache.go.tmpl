@@ -1,0 +1,17 @@
+package repositories
+
+import (
+	"time"
+
+	"github.com/morkid/paginate"
+)
+
+// readCacheTTL is how long a repository keeps a list (Read) result before querying the database again.
+// Writes through the same repository clear its cache immediately (ClearCaches).
+const readCacheTTL = 5 * time.Minute
+
+// cachedRead keeps both Read return values available on cache hits.
+type cachedRead[T any] struct {
+	page  paginate.Page
+	items []T
+}

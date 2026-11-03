@@ -16,7 +16,7 @@ type I__Entity__Service interface {
 		entities.__Entity__,
 		models.__Entity__Input,
 		models.__Entity__Page,
-	]
+	]__SERVICE_CLEAR_IFACE__
 }
 
 type __Entity__Service struct {
@@ -50,3 +50,4 @@ func (s *__Entity__Service) Delete(c context.Context, id any) error {
 func (s *__Entity__Service) GetByID(c context.Context, id any) (entities.__Entity__, error) {
 	return s.repo.GetByID(c, id)
 }
+__SERVICE_CLEAR_FUNC__

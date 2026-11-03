@@ -9,27 +9,37 @@ import (
 	"__MODULE__/internal/v1/models"
 	"github.com/devfeel/mapper"
 	"github.com/gin-gonic/gin"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
 type IUserRoleRepo interface {
+	ClearCaches()
 	common.IBaseCrudRepo[entities.UserRole, models.UserRoleInput, models.UserRolePage]
 	GetRoleIDsByUserID(c context.Context, userID any) ([]uint, error)
 	DeleteByUserIDAndRoleIDs(c context.Context, userID any, roleIDs []uint) error
 	BulkCreate(c context.Context, input []models.UserRoleInput) error
+	WithTx(tx *gorm.DB) IUserRoleRepo
 }
 
 type UserRoleRepo struct {
 	db        *gorm.DB
 	pageQuery string
+	readCache *ttlcache.Cache[string, cachedRead[models.UserRolePage]]
 }
 
 var _ IUserRoleRepo = &UserRoleRepo{}
 
 func NewUserRoleRepo(db *gorm.DB) *UserRoleRepo {
+	readCache := ttlcache.New(
+		ttlcache.WithTTL[string, cachedRead[models.UserRolePage]](readCacheTTL),
+	)
+	go readCache.Start()
+
 	return &UserRoleRepo{
-		db: db,
+		readCache: readCache,
+		db:        db,
 		pageQuery: `
 			SELECT 
 				*
@@ -47,19 +57,26 @@ func (r *UserRoleRepo) Create(c context.Context, input models.UserRoleInput) (ui
 
 	err := gorm.G[entities.UserRole](r.db).Create(c, &ur)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return ur.ID, err
 }
 
 func (r *UserRoleRepo) Read(c *gin.Context) (paginate.Page, []models.UserRolePage) {
-	urs := make([]models.UserRolePage, 0)
+	cacheKey := c.Request.URL.RawQuery
+	entry, _ := r.readCache.GetOrSetFunc(cacheKey, func() cachedRead[models.UserRolePage] {
+		urs := make([]models.UserRolePage, 0)
+		stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		pg := paginate.New()
+		page := pg.With(stmt).Request(c.Request).Response(&urs)
 
-	stmt := r.db.WithContext(c.Request.Context()).Raw(r.pageQuery)
+		return cachedRead[models.UserRolePage]{page: page, items: urs}
+	})
 
-	pg := paginate.New()
-
-	page := pg.With(stmt).Request(c.Request).Response(&urs)
-
-	return page, urs
+	result := entry.Value()
+	return result.page, result.items
 }
 
 func (r *UserRoleRepo) Update(c context.Context, id any, input models.UserRoleInput) error {
@@ -70,11 +87,19 @@ func (r *UserRoleRepo) Update(c context.Context, id any, input models.UserRoleIn
 
 	_, err := gorm.G[entities.UserRole](r.db).Where("id = ?", id).Updates(c, ur)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return err
 }
 
 func (r *UserRoleRepo) Delete(c context.Context, id any) error {
 	_, err := gorm.G[entities.UserRole](r.db).Where("id = ?", id).Delete(c)
+
+	if err == nil {
+		r.ClearCaches()
+	}
 
 	return err
 }
@@ -96,6 +121,10 @@ func (r *UserRoleRepo) GetRoleIDsByUserID(c context.Context, userID any) ([]uint
 func (r *UserRoleRepo) DeleteByUserIDAndRoleIDs(c context.Context, userID any, roleIDs []uint) error {
 	_, err := gorm.G[entities.UserRole](r.db).Where("user_id = ? and role_id in ?", userID, roleIDs).Delete(c)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return err
 }
 
@@ -107,5 +136,22 @@ func (r *UserRoleRepo) BulkCreate(c context.Context, input []models.UserRoleInpu
 
 	err = gorm.G[entities.UserRole](r.db).CreateInBatches(c, &userRoles, 100)
 
+	if err == nil {
+		r.ClearCaches()
+	}
+
 	return err
+}
+
+func (r *UserRoleRepo) ClearCaches() {
+	r.readCache.DeleteAll()
+}
+
+// WithTx returns a repository bound to tx that shares this repository's read cache, so writes made
+// inside a transaction invalidate the same cache (and no second cache or cleanup goroutine is created).
+func (r *UserRoleRepo) WithTx(tx *gorm.DB) IUserRoleRepo {
+	txRepo := *r
+	txRepo.db = tx
+
+	return &txRepo
 }

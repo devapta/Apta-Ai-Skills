@@ -61,8 +61,13 @@ def pluralize(word):
 
 def render(text, tokens):
     # longest token first so __Entities__ is never clobbered by a shorter overlapping one
-    for k in sorted(tokens, key=len, reverse=True):
-        text = text.replace(k, tokens[k])
+    # repeat until stable: a token's replacement text can itself contain tokens (the cache-endpoint snippets)
+    for _ in range(3):
+        before = text
+        for k in sorted(tokens, key=len, reverse=True):
+            text = text.replace(k, tokens[k])
+        if text == before:
+            break
     return text
 
 
@@ -169,6 +174,26 @@ def insert(path, marker, line, after=False):
     die(f"marker '// scaffold:{marker}' not found in {path} - was it removed? Insert the line by hand: {line.strip()}")
 
 
+CLEAR_HANDLER = """
+// ClearCaches godoc
+// @Summary			Clear __entity_human__ caches
+// @Description		Clear all cached __entity_human__ list data
+// @Tags			__entities-kebab__
+// @Accept			json
+// @Produce			json
+// @Success			200	{object}	common.Result[any]
+// @Failure			401	{object}	common.Result[string]
+// @Failure			500	{object}	common.Result[string]
+// @Security		ApiKeyAuth
+// @Router			/v1/__entities-kebab__/caches [delete]
+func (h *__Entity__Handler) ClearCaches(c *gin.Context) {
+	h.service.ClearCaches()
+
+	c.JSON(http.StatusOK, common.ResultOk[any](nil, "__Entity_human__ caches cleared"))
+}
+"""
+
+
 def cmd_crud(a):
     root = Path(a.dir or ".").resolve()
     gomod = root / "go.mod"
@@ -193,6 +218,15 @@ def cmd_crud(a):
             out.append(f"\t{gname} {gtype} `{tag}`")
         return "\n".join(out)
 
+    cache_tokens = {"__SERVICE_CLEAR_IFACE__": "", "__SERVICE_CLEAR_FUNC__": "", "__HANDLER_CLEAR__": "", "__ROUTE_CLEAR__": ""}
+    if a.cache_endpoint:
+        cache_tokens = {
+            "__SERVICE_CLEAR_IFACE__": "\n\tClearCaches()",
+            "__SERVICE_CLEAR_FUNC__": "\nfunc (s *__Entity__Service) ClearCaches() {\n\ts.repo.ClearCaches()\n}\n",
+            "__HANDLER_CLEAR__": CLEAR_HANDLER,
+            "__ROUTE_CLEAR__": '\n\t__entities__.DELETE("/caches", authM.Authz(enums.Perm__Entities__Update), h.ClearCaches)',
+        }
+
     tokens = {
         "__MODULE__": module,
         "__Entity__": pascal(ws), "__entity__": camel(ws),
@@ -205,6 +239,7 @@ def cmd_crud(a):
         "__INPUT_FIELDS__": fmt("input"), "__PAGE_FIELDS__": fmt("page"),
         "__ENTITY_IMPORTS__": '\t"time"\n\n' if uses_time else "",
         "__MODEL_IMPORTS__": '\t"time"\n\n' if uses_time else "",
+        **cache_tokens,
     }
 
     files = [
@@ -381,6 +416,8 @@ def main():
     c.add_argument("--name", required=True, help="singular entity name, any case: VehicleType, vehicle-type, 'vehicle type'")
     c.add_argument("--plural", help="override the plural when the default rule is wrong (e.g. person -> people)")
     c.add_argument("--field", action="append", help="name:type[:unique][:notnull]; repeatable. types: " + ", ".join(sorted(GO_TYPES)))
+    c.add_argument("--cache-endpoint", action="store_true",
+                   help="also add DELETE /<plural>/caches (needs <plural>#update) to clear the resource's read cache")
     c.add_argument("--dir", help="project root (default: cwd)")
     c.set_defaults(fn=cmd_crud)
 

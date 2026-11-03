@@ -52,3 +52,10 @@ handler field in `routes.APIHandlers` and `setup<Name>Routes` call in `router.go
 - `time` / `date` fields are `time.Time`: JSON must be RFC3339 (`2026-01-31T00:00:00Z`), even for `date` columns.
 - Uniqueness comes from the DB constraint, and soft-deleted rows still hold their unique values.
 - A foreign key `uint` is only enforced by the database after migration; add a service-level existence check for friendlier errors.
+- Lists are cached per repository for 5 minutes. Writes made through the repository clear the cache, but a write that
+  bypasses it (raw SQL, another service, a migration, a second app instance) leaves lists stale for up to the TTL. Each
+  running instance has its own cache. Custom write methods you add must call `r.ClearCaches()` on success; if a write
+  uses a transaction, clear after the commit. Tune `readCacheTTL` in `repositories/read-cache.go` or flush with a
+  `DELETE /<plural>/caches` endpoint (`crud --cache-endpoint`).
+- Because the cache key is only the query string, anything that changes a list's result besides the query (per-user
+  filtering in `pageQuery`, scoped schemas) must not use this cache as is.

@@ -10,3 +10,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate skills
         run: bash scripts/validate-skills.sh
+      - name: Installer selftest
+        run: bash scripts/selftest.sh

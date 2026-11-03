@@ -52,3 +52,11 @@ CI (`.github/workflows/validate.yml`) asserts per skill: `SKILL.md` exists with
 non-empty `name` and `description` frontmatter, every relative `.md` reference in
 `SKILL.md` resolves to a file inside the skill, and every `antigravity/*.md` is
 under the size cap.
+
+## The npx package
+
+`npx --allow-git=root github:devapta/Apta-Ai-Skills` installs this repo as an npm package and runs
+`bin/apta-skills.js`, a thin wrapper around `install.sh`. Only paths listed in
+`package.json` `"files"` ship (`bin/`, `install.sh`, `skills/`); anything under
+`skills/` is included automatically. `scripts/selftest.sh` asserts the package
+contents, so a new top-level file the installer needs must be added there too.

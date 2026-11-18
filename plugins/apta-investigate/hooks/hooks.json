@@ -1,0 +1,17 @@
+{
+  "description": "Deny tool calls that point into .apta-investigate/secrets/ (Environment Secrets).",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|MultiEdit|NotebookEdit|Grep|Glob|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/skills/apta-investigate/scripts/guard-secrets.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

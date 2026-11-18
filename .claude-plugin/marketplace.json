@@ -1,0 +1,45 @@
+{
+  "name": "apta-ai-skills",
+  "owner": { "name": "Apta" },
+  "metadata": {
+    "description": "Apta team agent skills, installable as plugins for Claude Code and Codex / ChatGPT desktop."
+  },
+  "plugins": [
+    {
+      "name": "apta-superskill",
+      "source": "./plugins/apta-superskill",
+      "description": "Apta's office frontend standard for React + TypeScript apps built with Vite, Tailwind CSS, shadcn/ui, Zustand and an Axios service layer.",
+      "category": "development"
+    },
+    {
+      "name": "apta-go-backend",
+      "source": "./plugins/apta-go-backend",
+      "description": "Scaffold an Apta-standard Go + Gin backend modeled on fleet-backend, and add CRUD endpoints to it.",
+      "category": "development"
+    },
+    {
+      "name": "apta-go-local-cloud",
+      "source": "./plugins/apta-go-local-cloud",
+      "description": "Scaffold an Apta Go + Gin backend split into shared, local and cloud modules joined by go.work, and add CRUD endpoints that respect which side owns the data.",
+      "category": "development"
+    },
+    {
+      "name": "apta-flutter-desktop",
+      "source": "./plugins/apta-flutter-desktop",
+      "description": "Standard for building Apta Flutter Desktop apps (Linux & Windows).",
+      "category": "development"
+    },
+    {
+      "name": "apta-frontend-deployment-setup",
+      "source": "./plugins/apta-frontend-deployment-setup",
+      "description": "Set up Docker + docker compose + GitHub Actions deployment for a Vite/React frontend, following the Apta pattern.",
+      "category": "development"
+    },
+    {
+      "name": "apta-investigate",
+      "source": "./plugins/apta-investigate",
+      "description": "Investigate a reported issue in an Apta project by checking its code against an Environment's PostgreSQL database and Grafana Loki logs, read-only.",
+      "category": "development"
+    }
+  ]
+}

@@ -9,11 +9,12 @@ project gets the same skills. Linux-only team — bash + coreutils, nothing else
 
 | Skill | Description |
 | --- | --- |
-| [`apta-superskill`](skills/apta-superskill/) | React + TypeScript + Vite + Tailwind/shadcn frontend standard: architecture, component patterns, API layer, styling. |
-| [`apta-go-backend`](skills/apta-go-backend/) | Go + Gin backend generator modeled on fleet-backend: scaffold a new project (GORM/Postgres, JWT, users/roles/user-roles, slog, Swagger, cobra, dig, OpenTelemetry), add CRUD endpoints, enable optional S3/Infisical/NATS. |
-| [`apta-go-local-cloud`](skills/apta-go-local-cloud/) | Go + Gin workspace with `shared`, `local` (on-site, open API) and `cloud` (JWT, schema-scoped reads) modules, modeled on simple-weighbridge-service: scaffold it, add CRUD resources with a data-authority side, enable optional S3/Infisical/NATS. |
-| [`apta-flutter-desktop`](skills/apta-flutter-desktop/) | Flutter Desktop (Linux & Windows) app standard: Screen → Provider → Repository → ApiService layering (Dio, get_it, Provider, forui), hardware behind fake/real interfaces (serial, NFC, OCR), mDNS server discovery, Windows/Linux release builds, PR review checklist. |
-| [`apta-frontend-deployment-setup`](skills/apta-frontend-deployment-setup/) | Vite/React frontend deploy setup: multi-stage Dockerfile + nginx SPA image, docker compose, GitHub Actions to `registry.apta.works` and self-hosted runners (dev on push to `dev`, prod on `v*.*.*` tags), build-time `VITE_*` from Infisical, repo secrets filled from Infisical via `gh`. |
+| [`apta-superskill`](plugins/apta-superskill/skills/apta-superskill/) | React + TypeScript + Vite + Tailwind/shadcn frontend standard: architecture, component patterns, API layer, styling. |
+| [`apta-go-backend`](plugins/apta-go-backend/skills/apta-go-backend/) | Go + Gin backend generator modeled on fleet-backend: scaffold a new project (GORM/Postgres, JWT, users/roles/user-roles, slog, Swagger, cobra, dig, OpenTelemetry), add CRUD endpoints, enable optional S3/Infisical/NATS. |
+| [`apta-go-local-cloud`](plugins/apta-go-local-cloud/skills/apta-go-local-cloud/) | Go + Gin workspace with `shared`, `local` (on-site, open API) and `cloud` (JWT, schema-scoped reads) modules, modeled on simple-weighbridge-service: scaffold it, add CRUD resources with a data-authority side, enable optional S3/Infisical/NATS. |
+| [`apta-flutter-desktop`](plugins/apta-flutter-desktop/skills/apta-flutter-desktop/) | Flutter Desktop (Linux & Windows) app standard: Screen → Provider → Repository → ApiService layering (Dio, get_it, Provider, forui), hardware behind fake/real interfaces (serial, NFC, OCR), mDNS server discovery, Windows/Linux release builds, PR review checklist. |
+| [`apta-frontend-deployment-setup`](plugins/apta-frontend-deployment-setup/skills/apta-frontend-deployment-setup/) | Vite/React frontend deploy setup: multi-stage Dockerfile + nginx SPA image, docker compose, GitHub Actions to `registry.apta.works` and self-hosted runners (dev on push to `dev`, prod on `v*.*.*` tags), build-time `VITE_*` from Infisical, repo secrets filled from Infisical via `gh`. |
+| [`apta-investigate`](plugins/apta-investigate/skills/apta-investigate/) | Investigate a reported issue by checking the code against an Environment's Postgres database and Grafana Loki logs (direct or through Grafana), read-only. Per-project `.apta-investigate/` folder (gitignored) with one settings file and one secrets file per Environment (`dev`, `prod-medan`, ...); the agent never reads the secrets. |
 
 Run `./install.sh --list` for the live list and which agents each skill supports.
 
@@ -117,6 +118,40 @@ A plain `./install.sh` in a terminal first asks where to install — `Project` (
 
 Antigravity only reads project rules (`.agents/rules/`), so it stays project-only.
 `--uninstall --global` removes exactly what it installed.
+
+## Install as a plugin (Claude Code, Codex, ChatGPT desktop)
+
+The repo is also a plugin marketplace (`.claude-plugin/marketplace.json`). Codex reads
+the same file. Every skill in the table above is its own plugin, named after the skill.
+A plugin installs for your user, not into a project. Refresh it with
+`claude plugin marketplace update apta-ai-skills` or `codex plugin marketplace upgrade`.
+The repo is private, so your own git credentials are used (an SSH key, or HTTPS after
+`gh auth setup-git`).
+
+Claude Code:
+
+```bash
+claude plugin marketplace add devapta/Apta-Ai-Skills
+claude plugin install apta-go-backend@apta-ai-skills      # one install per skill
+```
+
+(or `/plugin marketplace add devapta/Apta-Ai-Skills` inside a session, then `/plugin` to
+pick skills). The `apta-investigate` plugin also ships a Claude Code hook that keeps the
+agent out of `.apta-investigate/secrets/`.
+
+Codex CLI, and Codex inside the ChatGPT desktop app (one plugin system):
+
+```bash
+codex plugin marketplace add devapta/Apta-Ai-Skills
+codex plugin add apta-go-backend@apta-ai-skills
+```
+
+Plugins carry the skill only: Antigravity rules still come from `install.sh`.
+
+Skills that run local scripts against hosts on your tailnet only work in agents running
+on your machine (Claude Code, Codex CLI, Codex in the desktop app), never in ChatGPT's
+cloud chat. Plugin support in the ChatGPT desktop app's Linux preview is unconfirmed;
+Codex CLI on Linux works.
 
 ## Agents & project paths
 

@@ -1,0 +1,8 @@
+{
+  "name": "apta-frontend-deployment-setup",
+  "description": "Set up Docker + docker compose + GitHub Actions deployment for a Vite/React frontend, following the Apta pattern (registry.apta.works, Infisical secrets, self-hosted runners, nginx SPA image).",
+  "author": { "name": "Apta" },
+  "repository": "https://github.com/devapta/Apta-Ai-Skills",
+  "license": "MIT",
+  "keywords": ["docker", "github-actions", "deployment", "vite", "react", "infisical"]
+}

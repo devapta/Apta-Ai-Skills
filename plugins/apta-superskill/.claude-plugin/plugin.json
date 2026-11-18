@@ -1,0 +1,8 @@
+{
+  "name": "apta-superskill",
+  "description": "Apta's office frontend standard for React + TypeScript apps built with Vite, Tailwind CSS, shadcn/ui, Zustand and an Axios service layer: folder structure, components, state, API integration, theming and responsive layout.",
+  "author": { "name": "Apta" },
+  "repository": "https://github.com/devapta/Apta-Ai-Skills",
+  "license": "MIT",
+  "keywords": ["react", "typescript", "vite", "tailwind", "shadcn", "frontend"]
+}

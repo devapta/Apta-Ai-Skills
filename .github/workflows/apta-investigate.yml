@@ -1,0 +1,16 @@
+name: apta-investigate
+
+on:
+  pull_request:
+    paths:
+      - "plugins/apta-investigate/**"
+      - "scripts/test-apta-investigate.sh"
+      - ".github/workflows/apta-investigate.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: End-to-end test against Postgres, Loki and Grafana containers
+        run: bash scripts/test-apta-investigate.sh

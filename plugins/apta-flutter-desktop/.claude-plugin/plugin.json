@@ -1,0 +1,8 @@
+{
+  "name": "apta-flutter-desktop",
+  "description": "Standard for building Apta Flutter Desktop apps (Linux & Windows): Dio + get_it + Provider + forui layering, hardware (serial port, NFC reader, camera) behind fake/real interfaces, mDNS server discovery, Windows/Linux release builds and PR reviews.",
+  "author": { "name": "Apta" },
+  "repository": "https://github.com/devapta/Apta-Ai-Skills",
+  "license": "MIT",
+  "keywords": ["flutter", "dart", "desktop", "linux", "windows"]
+}

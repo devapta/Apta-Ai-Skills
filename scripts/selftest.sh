@@ -24,7 +24,7 @@ trap 'rm -rf "$tmp"' EXIT
 copy="$tmp/repo"
 mkdir -p "$copy/skills/fake-skill"
 cp "$REPO/install.sh" "$copy/"
-cp -r "$REPO/skills/." "$copy/skills/"
+cp -rL "$REPO/skills/." "$copy/skills/"   # -L: some skills are symlinks into plugins/
 cat >"$copy/skills/fake-skill/SKILL.md" <<'EOF'
 ---
 name: fake-skill

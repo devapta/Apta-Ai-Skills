@@ -1,0 +1,8 @@
+{
+  "name": "apta-investigate",
+  "description": "Investigate a reported issue in an Apta project by checking its code against an Environment's PostgreSQL database and Grafana Loki logs, read-only. Includes a hook that keeps the agent out of .apta-investigate/secrets/.",
+  "author": { "name": "Apta" },
+  "repository": "https://github.com/devapta/Apta-Ai-Skills",
+  "license": "MIT",
+  "keywords": ["investigation", "debugging", "postgres", "loki", "grafana"]
+}

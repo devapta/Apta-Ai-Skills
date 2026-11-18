@@ -1,15 +1,17 @@
 # Contributing skills
 
-A skill is a folder under `skills/<name>/` carrying the team standard in two
-renditions. The folder name is the selection name — it is what the interactive
-skill picker shows and what users pass to `install.sh --skill <name>`:
+A skill is a folder carrying the team standard in two renditions. The folder name
+is the selection name — it is what the interactive skill picker shows and what users
+pass to `install.sh --skill <name>`. Every skill also ships as a plugin, so its real
+folder lives inside the plugin and `skills/<name>` is a symlink to it (see
+[Shipping a skill as a plugin](#shipping-a-skill-as-a-plugin)):
 
 ```
-skills/
-└── my-skill/
-    ├── SKILL.md            # required: the agent skill (frontmatter + instructions)
-    ├── references/         # optional: detail files SKILL.md points to
-    └── antigravity/        # optional: terse rule files for Antigravity
+plugins/my-skill/skills/my-skill/
+├── SKILL.md            # required: the agent skill (frontmatter + instructions)
+├── references/         # optional: detail files SKILL.md points to
+├── scripts/, assets/   # optional: found relative to the skill folder, never by absolute path
+└── antigravity/        # optional: terse rule files for Antigravity
 ```
 
 ## SKILL.md format
@@ -40,6 +42,37 @@ terse `.md` rule files distilled from the main skill. Three rules:
   files would silently collide. Prefix with the skill name (`my-skill-style.md`).
 - **Keep each rule file small.** CI enforces a cap (8192 bytes per file) because
   Antigravity limits rule file size.
+
+## Shipping a skill as a plugin
+
+The repo is a plugin marketplace for Claude Code and Codex: `.claude-plugin/marketplace.json`
+lists one plugin per skill, and Codex reads the same file. Each skill keeps its real files
+inside its plugin, and `skills/<name>` is a symlink to them:
+
+```
+plugins/my-skill/
+├── .claude-plugin/plugin.json      # name, description (Codex reads this one too)
+├── hooks/hooks.json                # optional Claude Code hooks
+└── skills/my-skill/                # the real skill: SKILL.md, references/, scripts/, antigravity/
+skills/my-skill -> ../plugins/my-skill/skills/my-skill
+```
+
+```bash
+ln -s ../plugins/my-skill/skills/my-skill skills/my-skill
+```
+
+The symlink points that way because Codex's plugin install skips symlinks, while
+`install.sh`, `npx skills` and `validate-skills.sh` all follow the `skills/` symlink.
+An installed plugin is copied to a cache directory, so a skill reaches its own `scripts/`
+and `assets/` relative to its folder and nothing outside it. Add the plugin's entry to
+`.claude-plugin/marketplace.json`, then test an install from a local copy:
+
+```bash
+claude plugin marketplace add ./ && claude plugin install my-skill@apta-ai-skills
+codex plugin marketplace add "$PWD" && codex plugin add my-skill@apta-ai-skills
+```
+
+Use a throwaway `CLAUDE_CONFIG_DIR` / `CODEX_HOME` to keep your own setup untouched.
 
 ## Before you commit
 

@@ -1,0 +1,8 @@
+{
+  "name": "apta-go-backend",
+  "description": "Scaffold an Apta-standard Go + Gin backend (GORM/Postgres, JWT auth, users/roles/user-roles, slog, Swagger, cobra, uber/dig DI, OpenTelemetry) modeled on fleet-backend, and add CRUD endpoints to it. Optional S3, Infisical and NATS modules.",
+  "author": { "name": "Apta" },
+  "repository": "https://github.com/devapta/Apta-Ai-Skills",
+  "license": "MIT",
+  "keywords": ["go", "gin", "backend", "scaffold", "crud"]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "apta-go-local-cloud",
+  "description": "Scaffold an Apta Go + Gin backend split into shared, local (on-site, open API) and cloud (JWT auth, schema-scoped reads) modules joined by go.work, modeled on simple-weighbridge-service, and add CRUD endpoints that respect which side owns the data.",
+  "author": { "name": "Apta" },
+  "repository": "https://github.com/devapta/Apta-Ai-Skills",
+  "license": "MIT",
+  "keywords": ["go", "gin", "backend", "scaffold", "crud", "go-workspace"]
+}

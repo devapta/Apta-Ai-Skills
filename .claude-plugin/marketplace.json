@@ -40,6 +40,12 @@
       "source": "./plugins/apta-investigate",
       "description": "Investigate a reported issue in an Apta project by checking its code against an Environment's PostgreSQL database and Grafana Loki logs, read-only.",
       "category": "development"
+    },
+    {
+      "name": "grill-then-plan",
+      "source": "./plugins/grill-then-plan",
+      "description": "Run a grill-with-docs interview, then write an indexed implementation plan with numbered steps and acceptance checks.",
+      "category": "development"
     }
   ]
 }

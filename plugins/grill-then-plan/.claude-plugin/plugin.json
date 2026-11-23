@@ -1,0 +1,8 @@
+{
+  "name": "grill-then-plan",
+  "description": "Run a grill-with-docs interview, then write an indexed implementation plan with numbered steps and acceptance checks.",
+  "author": {
+    "name": "Apta"
+  },
+  "license": "MIT"
+}

@@ -119,4 +119,38 @@ HOME="$fakehome" "$INSTALL" --global --agent claude-code --agent codex --skill f
 HOME="$fakehome" "$INSTALL" --global --agent opencode --skill fake-skill --uninstall >/dev/null || fail "global opencode uninstall failed"
 missing "$fakehome/.claude"; missing "$fakehome/.agents"; missing "$fakehome/.config"
 
+if command -v node >/dev/null && command -v npm >/dev/null; then
+  # The npx entry point: bin/apta-skills.js must forward args, cwd and exit code.
+  mkdir -p "$copy/bin"
+  cp "$REPO/bin/apta-skills.js" "$copy/bin/"
+  NPX_BIN="$copy/bin/apta-skills.js"
+
+  echo "== npx wrapper: --list =="
+  node "$NPX_BIN" --list | grep -q "fake-skill" || fail "wrapper --list did not show skills"
+
+  echo "== npx wrapper: exit code is forwarded =="
+  set +e; node "$NPX_BIN" --agent bogus >/dev/null 2>&1; rc=$?; set -e
+  [[ $rc -eq 1 ]] || fail "wrapper exit code for bogus agent: $rc (want 1)"
+
+  echo "== npx wrapper: installs into the caller's cwd, then uninstalls =="
+  (cd "$proj" && node "$NPX_BIN" --agent claude-code --skill fake-skill >/dev/null) || fail "wrapper install failed"
+  exists "$proj/.claude/skills/fake-skill/SKILL.md"
+  (cd "$proj" && node "$NPX_BIN" --agent claude-code --skill fake-skill --uninstall >/dev/null) || fail "wrapper uninstall failed"
+  missing "$proj/.claude"
+
+  echo "== npm package contents =="
+  packed="$(cd "$REPO" && npm pack --dry-run --json 2>/dev/null \
+    | node -e 'for (const f of Object.values(JSON.parse(require("fs").readFileSync(0)))[0].files) console.log(f.path)')"
+  has()    { grep -qxF "$1" <<<"$packed" || fail "npm package is missing: $1"; }
+  hasnt()  { ! grep -q "$1" <<<"$packed" || fail "npm package should not contain: $1"; }
+  has bin/apta-skills.js
+  has install.sh
+  while IFS= read -r rel; do has "$rel"; done < <(cd "$REPO" && git ls-files skills)
+  hasnt '^evaluations/'
+  hasnt '^scripts/'
+  hasnt '^\.github/'
+else
+  echo "== npx wrapper + npm package: SKIPPED (node/npm not installed) =="
+fi
+
 echo "SELFTEST PASSED"

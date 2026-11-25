@@ -1,22 +1,32 @@
 ---
 name: grill-then-plan
-description: Use when the user wants to work through a feature or product idea in an interview and then save an ordered implementation plan in the repository.
+description: Interview the user about a supplied spec in grouped rounds, then write numbered implementation steps with repository paths, focused code snippets, and tests.
 ---
 
 # Grill then plan
 
-## Run the interview first
+## Interview from the supplied spec
 
-Invoke `grill-with-docs` on the user's idea as the first phase. On hosts that load skills by file, read its installed SKILL.md and follow it, including its `grilling` and `domain-modeling` instructions. If a required skill is unavailable, identify the missing dependency and pause. Carry the interview across turns until the decisions that affect scope, dependencies and acceptance checks are settled or explicitly deferred. Use the domain terms and decision records established during the interview.
+Invoke `grill-with-docs` first, using the user's Markdown file or chat message as the spec. A pasted spec is sufficient. Treat a supplied file as read-only and keep chat requirements in the conversation. On file-based hosts, read the installed skill and follow its `grilling` and `domain-modeling` instructions. If a dependency is unavailable, identify it and pause.
 
-## Write the plan
+For this workflow, use grouped rounds in place of the single-question cadence in `grilling`. Read the spec and inspect the repo first. Ask about decisions the user owns, with a recommended answer and a short reason for each. Group questions the user can answer independently. Let the topic determine the round size, including ten or more questions when useful. Hold a dependent question until the answer that shapes it is known.
 
-Inspect the target repo's existing plans before writing. Follow its established locations when present. The agent-6 layout uses three artifacts:
+Prefer an interactive question form when available. If a round exceeds the form's capacity, present the complete round as numbered questions in chat so the user can answer together. Use the same chat format on hosts without forms. Wait for the answers, then use them to shape the next round. Carry forward resolved terminology and architectural decisions through the delegated skill. Summarize the agreed scope and explicit deferrals, and proceed when the user confirms.
 
-- **docs/plan.md** describes the agreed product or feature from the user's perspective. Cover who uses it, what they can do, and the constraints that shape it. For an existing product brief, update the relevant section.
-- **docs/plans/00-README.md** explains how to implement one step at a time after its prerequisites have landed. Include an ordered table with the step number, a relative link to its file, and the result. Record decisions shared across steps here and link relevant glossary entries or ADRs.
-- **docs/plans/NN-slug.md** describes one independently verifiable increment that leaves the project working. Append new steps using the next available number in sequence. Preserve existing step numbers and links.
+## Write the index and step files
 
-Start each step with its number, title and a relative link to the index. Use **Goal**, **Depends on**, **Scope**, **Out of scope**, **Domain terms**, **Acceptance checks**, and **Notes for the agent** as the working outline. Name prerequisite steps by number. Describe observable checks that a later implementer can run, including relevant failure cases. Use the notes for concrete repo entry points and decisions the implementer will need.
+Use the target repo's existing plan directory and numbering. The default index is **docs/plans/00-README.md**, with one **docs/plans/NN-slug.md** per independently verifiable increment. Preserve existing numbers and links when extending a plan. The planning outputs are the index and steps. Link the supplied spec from the index if it is a file. For a chat spec, carry its requirements directly into the relevant steps. Do not generate or update a product brief or spec file.
 
-Before handing off, verify that each agreed outcome has a step and an acceptance check, dependencies point to earlier steps, and relative links resolve. Return links to the brief and index. Implementation is a separate request.
+Give the index an ordered table with each step's number, relative link and observable result. Identify shared decisions and link relevant glossary entries or ADRs. Each step should leave the project working once its prerequisites have landed.
+
+## Make each step implementable
+
+Write each step so an implementer can start with that file and its linked prerequisites. Include all of the following:
+
+- **Goal and dependencies.** State the outcome, prerequisite step numbers, and where this step ends. Link back to the index.
+- **Starting point.** Inspect the actual entry points. Give repo-relative paths and relevant symbols, explain today's behavior, and identify files to create or modify. Mark proposed paths and symbols as new, including anything supplied by a future prerequisite.
+- **Design.** Walk through the changes in execution or implementation order. Include a focused, language-tagged code snippet showing the contract or behavior the implementer needs to get right, such as a function signature and its call site, a state transition, or a configuration block. Place the snippet beside the path where it belongs and use the project's real types and conventions.
+- **Tests.** Name the test file and the interface or entry point under test. Give the setup, action and expected result for the main behavior and relevant failure or boundary cases. Provide the project's test command. For a manual check, give the exact action and visible result.
+- **Done when.** List observable acceptance checks that tie the implementation and tests to the agreed requirement.
+
+Before handoff, trace every in-scope requirement to a step and an acceptance check. Check existing paths and symbols against the repo, resolve relative links, and verify that prerequisites precede their consumers. Return a link to the index.
